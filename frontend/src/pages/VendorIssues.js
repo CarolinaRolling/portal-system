@@ -21,7 +21,7 @@ const VendorIssues = () => {
   const location = useLocation();
   
   // Pre-filled data from navigation state
-  const prefillData = location.state || {};
+  const prefillData = location.state?.prefill || location.state || {};
 
   // Form state
   const [formData, setFormData] = useState({
@@ -34,7 +34,7 @@ const VendorIssues = () => {
     fetchIssues();
     
     // If navigated here to report new issue, show modal
-    if (prefillData.workOrderId) {
+    if (prefillData.workOrderId || location.state?.prefill?.workOrderId) {
       setShowReportModal(true);
     }
   }, []);
@@ -185,14 +185,16 @@ const VendorIssues = () => {
 
                 <form onSubmit={handleSubmitIssue} className="issue-form">
                   {/* Work Order Info */}
-                  {prefillData.drNumber && (
-                    <div className="form-info">
-                      <p><strong>Work Order:</strong> DR-{prefillData.drNumber}</p>
+                  {(prefillData.poNumber || prefillData.workOrderId) && (
+                    <div className="form-info" style={{background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1rem'}}>
                       {prefillData.poNumber && (
-                        <p><strong>PO:</strong> {prefillData.poNumber}</p>
+                        <p style={{margin: '0 0 0.25rem', fontWeight: '600'}}>📋 PO: {prefillData.poNumber}</p>
                       )}
-                      {prefillData.partNumber && (
-                        <p><strong>Part:</strong> #{prefillData.partNumber}</p>
+                      {prefillData.partIndex && (
+                        <p style={{margin: '0 0 0.25rem'}}>📦 <strong>Part #{prefillData.partIndex}</strong>{prefillData.partNumber ? `: ${prefillData.partNumber}` : ''}</p>
+                      )}
+                      {prefillData.partDescription && (
+                        <p style={{margin: 0, color: '#555', fontSize: '0.875rem'}}>{prefillData.partDescription}</p>
                       )}
                     </div>
                   )}

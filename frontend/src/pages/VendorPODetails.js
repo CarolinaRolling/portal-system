@@ -9,6 +9,7 @@ const VendorPODetails = ({ user }) => {
   const navigate = useNavigate();
   const [poData, setPoData] = useState(null);
   const [files, setFiles] = useState([]);
+  const [parts, setParts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [downloadingFile, setDownloadingFile] = useState(null);
@@ -80,6 +81,7 @@ const VendorPODetails = ({ user }) => {
         console.log('\n📊 TOTAL FILES ACROSS ALL PARTS:', allFiles.length);
         console.log('All files:', allFiles);
         setFiles(allFiles);
+        setParts(data.parts);
         
       } else {
         console.log('📁 NO PARTS ARRAY FOUND');
@@ -398,133 +400,131 @@ const VendorPODetails = ({ user }) => {
           )}
         </div>
 
-        {/* Files Section */}
-        <div style={{
-          background: 'white',
-          borderRadius: '12px',
-          padding: '2rem',
-          boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
-        }}>
-          <h3 style={{margin: '0 0 1.5rem 0', fontSize: '1.25rem'}}>
-            📁 Files ({files.length})
-          </h3>
+        {/* Line Items Section */}
+        {parts.length > 0 ? parts.map((part, partIndex) => {
+          const partFiles = part.files || [];
+          const partNum = part.partNumber || part.part_number || part.clientPartNumber || '';
+          const desc = part.description || part.serviceDescription || part.service_description || '';
+          const qty = part.quantity || part.qty || '';
+          const serviceNotes = part.serviceNotes || part.service_notes || part.notes || '';
+          const partId = part.id || part.workOrderPartId;
 
-          {files.length === 0 ? (
-            <div style={{
-              textAlign: 'center',
-              padding: '3rem 1rem',
-              color: '#999'
+          return (
+            <div key={partId || partIndex} style={{
+              background: 'white',
+              borderRadius: '12px',
+              padding: 'clamp(1rem, 3vw, 1.75rem)',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
+              borderLeft: '4px solid #f59e0b'
             }}>
-              <div style={{fontSize: '3rem', marginBottom: '1rem'}}>📭</div>
-              <p style={{margin: 0}}>No files attached to this purchase order</p>
-            </div>
-          ) : (
-            <div style={{
-              display: 'grid',
-              gap: '1rem'
-            }}>
-              {files.map((file) => {
-                const fileName = file.filename || file.fileName || file.originalName || file.name || 'Unnamed File';
-                const is3D = is3DViewable(fileName);
-                
-                console.log('🔍 Rendering file:', {
-                  id: file.id,
-                  fileName: fileName,
-                  is3D: is3D,
-                  allFields: Object.keys(file)
-                });
-                
-                return (
-                <div 
-                  key={file.id}
-                  style={{
-                    display: 'flex',
-                    justifyContent: 'space-between',
-                    alignItems: 'center',
-                    padding: '1rem',
-                    border: '2px solid #e0e0e0',
-                    borderRadius: '8px',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.borderColor = '#f59e0b';
-                    e.currentTarget.style.background = '#fff9f0';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.borderColor = '#e0e0e0';
-                    e.currentTarget.style.background = 'white';
-                  }}
-                >
-                  <div style={{flex: 1}}>
-                    <p style={{margin: '0 0 0.25rem 0', fontWeight: '600', fontSize: '1rem'}}>
-                      📄 {fileName}
+              {/* Part header */}
+              <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '0.75rem', marginBottom: '1rem'}}>
+                <div style={{flex: 1}}>
+                  <h3 style={{margin: '0 0 0.35rem 0', fontSize: '1.1rem', color: '#1a1a1a'}}>
+                    📦 Part #{partIndex + 1}{partNum ? `: ${partNum}` : ''}
+                  </h3>
+                  {qty && (
+                    <span style={{display: 'inline-block', background: '#fef3c7', color: '#92400e', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '600', marginBottom: '0.35rem'}}>
+                      Qty: {qty}
+                    </span>
+                  )}
+                  {desc && (
+                    <p style={{margin: '0.35rem 0 0', color: '#333', fontSize: '0.95rem', lineHeight: 1.5}}>
+                      {desc}
                     </p>
-                    <p style={{margin: 0, color: '#666', fontSize: '0.875rem'}}>
-                      {(file.sharedAt || file.createdAt || file.uploadedAt) ? `Uploaded: ${formatDate(file.sharedAt || file.createdAt || file.uploadedAt)}` : ''}
-                      {is3D && <span style={{marginLeft: '0.5rem', color: '#8b5cf6'}}>• 3D Viewable</span>}
+                  )}
+                  {serviceNotes && (
+                    <p style={{margin: '0.5rem 0 0', color: '#555', fontSize: '0.875rem', fontStyle: 'italic'}}>
+                      📝 Service Notes: {serviceNotes}
                     </p>
-                  </div>
-                  <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '140px'}}>
-                    {is3D && (
-                      <button
-                        onClick={() => handleView3D(file.id, fileName)}
-                        style={{
-                          padding: '0.6rem 1rem',
-                          background: '#8b5cf6',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '6px',
-                          cursor: 'pointer',
-                          fontWeight: '600',
-                          transition: 'all 0.2s',
-                          width: '100%',
-                          textAlign: 'center'
-                        }}
-                        onMouseEnter={(e) => {
-                          e.currentTarget.style.background = '#7c3aed';
-                        }}
-                        onMouseLeave={(e) => {
-                          e.currentTarget.style.background = '#8b5cf6';
-                        }}
-                      >
-                        🎨 View 3D
-                      </button>
-                    )}
-                    <button
-                      onClick={() => handleDownloadFile(file.id, fileName)}
-                      disabled={downloadingFile === file.id}
-                      style={{
-                        padding: '0.6rem 1rem',
-                        background: downloadingFile === file.id ? '#ccc' : '#f59e0b',
-                        color: 'white',
-                        border: 'none',
-                        borderRadius: '6px',
-                        cursor: downloadingFile === file.id ? 'not-allowed' : 'pointer',
-                        fontWeight: '600',
-                        transition: 'all 0.2s',
-                        width: '100%',
-                        textAlign: 'center'
-                      }}
-                      onMouseEnter={(e) => {
-                        if (downloadingFile !== file.id) {
-                          e.currentTarget.style.background = '#d97706';
-                        }
-                      }}
-                      onMouseLeave={(e) => {
-                        if (downloadingFile !== file.id) {
-                          e.currentTarget.style.background = '#f59e0b';
-                        }
-                      }}
-                    >
-                      {downloadingFile === file.id ? '⏳ Downloading...' : '⬇️ Download'}
-                    </button>
-                  </div>
+                  )}
                 </div>
-              );
-              })}
+                <button
+                  onClick={() => navigate('/vendor/issues', { state: {
+                    prefill: {
+                      workOrderId: poData.workOrder?.id || poData.workOrderId,
+                      workOrderPartId: partId,
+                      poNumber: poNumber,
+                      partNumber: partNum,
+                      partDescription: desc,
+                      partIndex: partIndex + 1
+                    }
+                  }})}
+                  style={{
+                    padding: '0.45rem 0.9rem',
+                    background: 'white',
+                    color: '#dc2626',
+                    border: '1.5px solid #dc2626',
+                    borderRadius: '6px',
+                    cursor: 'pointer',
+                    fontWeight: '600',
+                    fontSize: '0.82rem',
+                    whiteSpace: 'nowrap',
+                    flexShrink: 0
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.background = '#fef2f2'; }}
+                  onMouseLeave={e => { e.currentTarget.style.background = 'white'; }}
+                >
+                  ⚠️ Report Issue
+                </button>
+              </div>
+
+              {/* Part files */}
+              {partFiles.length > 0 ? (
+                <div style={{display: 'grid', gap: '0.6rem', marginTop: '0.75rem', borderTop: '1px solid #f0f0f0', paddingTop: '0.75rem'}}>
+                  <p style={{margin: '0 0 0.4rem', fontSize: '0.8rem', fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em'}}>
+                    Files ({partFiles.length})
+                  </p>
+                  {partFiles.map((file) => {
+                    const fileName = file.filename || file.fileName || file.originalName || file.name || 'Unnamed File';
+                    const is3D = is3DViewable(fileName);
+                    return (
+                      <div key={file.id} style={{
+                        display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                        flexWrap: 'wrap', gap: '0.75rem',
+                        padding: '0.75rem', border: '1.5px solid #e8e8e8', borderRadius: '8px',
+                        transition: 'all 0.2s', boxSizing: 'border-box'
+                      }}
+                        onMouseEnter={e => { e.currentTarget.style.borderColor = '#f59e0b'; e.currentTarget.style.background = '#fffbf0'; }}
+                        onMouseLeave={e => { e.currentTarget.style.borderColor = '#e8e8e8'; e.currentTarget.style.background = 'white'; }}
+                      >
+                        <div style={{flex: 1, minWidth: 0}}>
+                          <p style={{margin: '0 0 0.2rem', fontWeight: '600', fontSize: '0.9rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap'}}>
+                            📄 {fileName}
+                          </p>
+                          <p style={{margin: 0, color: '#888', fontSize: '0.8rem'}}>
+                            {(file.sharedAt || file.createdAt || file.uploadedAt) ? `Uploaded: ${formatDate(file.sharedAt || file.createdAt || file.uploadedAt)}` : ''}
+                            {is3D && <span style={{marginLeft: '0.4rem', color: '#8b5cf6'}}>• 3D Viewable</span>}
+                          </p>
+                        </div>
+                        <div style={{display: 'flex', flexDirection: 'column', gap: '0.4rem', minWidth: '130px'}}>
+                          {is3D && (
+                            <button onClick={() => handleView3D(file.id, fileName)} style={{padding: '0.45rem 0.75rem', background: '#8b5cf6', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem', width: '100%'}}
+                              onMouseEnter={e => e.currentTarget.style.background = '#7c3aed'}
+                              onMouseLeave={e => e.currentTarget.style.background = '#8b5cf6'}
+                            >🎨 View 3D</button>
+                          )}
+                          <button onClick={() => handleDownloadFile(file.id, fileName)} disabled={downloadingFile === file.id}
+                            style={{padding: '0.45rem 0.75rem', background: downloadingFile === file.id ? '#ccc' : '#f59e0b', color: 'white', border: 'none', borderRadius: '6px', cursor: downloadingFile === file.id ? 'not-allowed' : 'pointer', fontWeight: '600', fontSize: '0.82rem', width: '100%'}}
+                            onMouseEnter={e => { if (downloadingFile !== file.id) e.currentTarget.style.background = '#d97706'; }}
+                            onMouseLeave={e => { if (downloadingFile !== file.id) e.currentTarget.style.background = '#f59e0b'; }}
+                          >{downloadingFile === file.id ? '⏳...' : '⬇️ Download'}</button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <p style={{margin: '0.75rem 0 0', color: '#aaa', fontSize: '0.875rem'}}>No files attached to this part.</p>
+              )}
             </div>
-          )}
-        </div>
+          );
+        }) : (
+          <div style={{background: 'white', borderRadius: '12px', padding: '2rem', boxShadow: '0 2px 8px rgba(0,0,0,0.1)', textAlign: 'center', color: '#999'}}>
+            <div style={{fontSize: '2.5rem', marginBottom: '0.75rem'}}>📭</div>
+            <p style={{margin: 0}}>No line items found for this purchase order.</p>
+          </div>
+        )}
       </div>
 
       {/* 3D Viewer Modal */}
