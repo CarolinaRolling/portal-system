@@ -1,0 +1,461 @@
+/* frontend/src/components/FileViewers-Enhanced.css */
+/* Enhanced Styles for Week 3 - Measurements, Layers, Annotations */
+
+/* Existing styles from Week 2 */
+@import './FileViewers.css';
+
+/* Enhanced viewer container */
+.file-viewer-container.enhanced {
+  background: #2c3e50;
+}
+
+/* Title with meta info */
+.title-info {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.viewer-meta {
+  color: #95a5a6;
+  font-size: 0.85em;
+  font-weight: normal;
+}
+
+/* Active button state */
+.btn-active {
+  background: #3498db !important;
+  color: white !important;
+}
+
+/* Measurement mode cursor */
+.viewer-canvas.measurement-mode {
+  cursor: crosshair !important;
+}
+
+/* Instructions Overlay */
+.instructions-overlay {
+  position: absolute;
+  top: 20px;
+  right: 20px;
+  z-index: 100;
+  max-width: 350px;
+  animation: slideIn 0.3s ease-out;
+}
+
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.instructions-box {
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  padding: 15px;
+  border-radius: 4px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  position: relative;
+}
+
+.instructions-box h4 {
+  margin: 0 0 10px 0;
+  color: #856404;
+  font-size: 1em;
+}
+
+.instructions-box p {
+  margin: 0;
+  color: #856404;
+  line-height: 1.5;
+}
+
+.instructions-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  background: none;
+  border: none;
+  font-size: 1.2em;
+  cursor: pointer;
+  color: #856404;
+  padding: 0;
+  width: 24px;
+  height: 24px;
+  line-height: 1;
+}
+
+.instructions-close:hover {
+  color: #533f03;
+}
+
+/* Measurements Panel */
+.measurements-panel {
+  position: absolute;
+  bottom: 80px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  max-width: 300px;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.measurements-panel .panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.measurements-panel h4 {
+  margin: 0;
+  font-size: 1em;
+  color: #2c3e50;
+}
+
+.measurements-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.measurement-item {
+  background: #f8f9fa;
+  padding: 10px;
+  border-radius: 4px;
+  border-left: 3px solid #3498db;
+}
+
+.measurement-distance {
+  display: block;
+  font-weight: 600;
+  color: #2c3e50;
+  font-size: 1.1em;
+  margin-bottom: 4px;
+}
+
+.measurement-points {
+  display: block;
+  color: #7f8c8d;
+  font-size: 0.85em;
+  font-family: 'Courier New', monospace;
+}
+
+/* Layers Panel */
+.layers-panel {
+  position: absolute;
+  top: 20px;
+  left: 20px;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 8px;
+  padding: 15px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  min-width: 200px;
+  max-height: 400px;
+  overflow-y: auto;
+  z-index: 50;
+}
+
+.layers-panel h4 {
+  margin: 0 0 12px 0;
+  font-size: 1em;
+  color: #2c3e50;
+  padding-bottom: 10px;
+  border-bottom: 2px solid #e9ecef;
+}
+
+.layers-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.layer-item {
+  padding: 6px;
+  border-radius: 4px;
+  transition: background 0.2s;
+}
+
+.layer-item:hover {
+  background: #f8f9fa;
+}
+
+.layer-item label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.layer-item input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.layer-name {
+  flex: 1;
+  color: #2c3e50;
+  font-weight: 500;
+}
+
+.layer-count {
+  color: #7f8c8d;
+  font-size: 0.85em;
+}
+
+/* View Controls Panel */
+.view-controls-panel {
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 8px;
+  z-index: 50;
+}
+
+.control-btn {
+  background: rgba(255, 255, 255, 0.9);
+  border: 1px solid #dee2e6;
+  padding: 8px 12px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.9em;
+  color: #2c3e50;
+  transition: all 0.2s;
+}
+
+.control-btn:hover {
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.control-btn.active {
+  background: #3498db;
+  color: white;
+  border-color: #3498db;
+}
+
+/* Help highlight */
+.help-highlight {
+  background: #fff3cd;
+  padding: 4px 8px;
+  border-radius: 4px;
+  color: #856404 !important;
+  font-weight: 600;
+}
+
+/* Scrollbar styling for panels */
+.measurements-panel::-webkit-scrollbar,
+.layers-panel::-webkit-scrollbar {
+  width: 6px;
+}
+
+.measurements-panel::-webkit-scrollbar-track,
+.layers-panel::-webkit-scrollbar-track {
+  background: #f1f1f1;
+  border-radius: 3px;
+}
+
+.measurements-panel::-webkit-scrollbar-thumb,
+.layers-panel::-webkit-scrollbar-thumb {
+  background: #95a5a6;
+  border-radius: 3px;
+}
+
+.measurements-panel::-webkit-scrollbar-thumb:hover,
+.layers-panel::-webkit-scrollbar-thumb:hover {
+  background: #7f8c8d;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .instructions-overlay {
+    top: 10px;
+    right: 10px;
+    left: 10px;
+    max-width: none;
+  }
+
+  .instructions-box {
+    padding: 12px;
+    font-size: 0.9em;
+  }
+
+  .measurements-panel,
+  .layers-panel {
+    max-width: calc(100% - 40px);
+    font-size: 0.9em;
+  }
+
+  .measurements-panel {
+    bottom: 60px;
+    left: 10px;
+    right: 10px;
+    max-height: 200px;
+  }
+
+  .layers-panel {
+    top: 10px;
+    left: 10px;
+    max-height: 250px;
+  }
+
+  .view-controls-panel {
+    bottom: 10px;
+    right: 10px;
+    flex-direction: column;
+  }
+
+  .control-btn {
+    padding: 10px;
+    min-width: 80px;
+    text-align: center;
+  }
+
+  .viewer-meta {
+    display: none; /* Hide on mobile to save space */
+  }
+}
+
+/* Landscape mode on mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .instructions-overlay {
+    max-width: 300px;
+  }
+
+  .measurements-panel {
+    max-height: 150px;
+  }
+
+  .layers-panel {
+    max-height: 180px;
+  }
+}
+
+/* Print styles (for screenshots) */
+@media print {
+  .file-viewer-header,
+  .file-viewer-footer,
+  .measurements-panel,
+  .layers-panel,
+  .view-controls-panel,
+  .instructions-overlay {
+    display: none !important;
+  }
+
+  .file-viewer-body {
+    background: white !important;
+  }
+}
+
+/* Animation for measurement points */
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+  50% {
+    transform: scale(1.2);
+    opacity: 0.8;
+  }
+}
+
+.measurement-point {
+  animation: pulse 1s ease-in-out infinite;
+}
+
+/* Tooltips */
+[title] {
+  position: relative;
+}
+
+/* Better focus states for accessibility */
+.control-btn:focus,
+.layer-item input:focus,
+.instructions-close:focus {
+  outline: 2px solid #3498db;
+  outline-offset: 2px;
+}
+
+/* Loading state improvements */
+.viewer-loading {
+  backdrop-filter: blur(5px);
+}
+
+/* Error state improvements */
+.viewer-error {
+  max-width: 600px;
+  width: 90%;
+}
+
+.viewer-error p {
+  word-wrap: break-word;
+}
+
+/* Performance optimizations */
+.measurements-panel,
+.layers-panel,
+.view-controls-panel {
+  will-change: transform;
+  transform: translateZ(0);
+}
+
+/* Dark mode support */
+@media (prefers-color-scheme: dark) {
+  .measurements-panel,
+  .layers-panel {
+    background: rgba(44, 62, 80, 0.95);
+    color: #ecf0f1;
+  }
+
+  .measurements-panel h4,
+  .layers-panel h4,
+  .layer-name,
+  .measurement-distance {
+    color: #ecf0f1;
+  }
+
+  .measurement-item {
+    background: #34495e;
+  }
+
+  .layer-item:hover {
+    background: #34495e;
+  }
+
+  .control-btn {
+    background: rgba(52, 73, 94, 0.9);
+    color: #ecf0f1;
+    border-color: #7f8c8d;
+  }
+
+  .control-btn:hover {
+    background: #34495e;
+  }
+}
+
+/* High contrast mode support */
+@media (prefers-contrast: high) {
+  .measurements-panel,
+  .layers-panel,
+  .instructions-box {
+    border: 2px solid currentColor;
+  }
+
+  .control-btn {
+    border: 2px solid currentColor;
+  }
+}
