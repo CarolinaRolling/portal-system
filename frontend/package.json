@@ -12,7 +12,7 @@
     "three": "0.160.0",
     "dxf-parser": "latest",
     "web-vitals": "^2.1.4",
-    "occt-import-js": "^0.0.28"
+    "occt-import-js": "^0.0.23"
   },
   "devDependencies": {
     "react-scripts": "5.0.1"
