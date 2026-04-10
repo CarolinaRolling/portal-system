@@ -204,7 +204,7 @@ const AdminPanel = () => {
           <div className="header-left">
             <img src="/logo.png" alt="Carolina Rolling Co Inc" className="admin-logo" />
             <div>
-              <h1>âï¸ Admin Panel</h1>
+              <h1>⚙️ Admin Panel</h1>
               <p>Manage users and view system logs</p>
             </div>
           </div>
@@ -215,10 +215,10 @@ const AdminPanel = () => {
               disabled={migrationLoading}
               title="Run database migration to add api_key column"
             >
-              {migrationLoading ? 'â³ Migrating...' : 'ð§ Run Migration'}
+              {migrationLoading ? '⏳ Migrating...' : '🔧 Run Migration'}
             </button>
             <button onClick={() => navigate('/dashboard')} className="btn-back">
-              â Back to Dashboard
+              ← Back to Dashboard
             </button>
           </div>
         </div>
@@ -226,19 +226,19 @@ const AdminPanel = () => {
 
       {error && (
         <div className="error-banner">
-          <span>â ï¸</span> {error}
+          <span>⚠️</span> {error}
         </div>
       )}
 
       {/* Migration Section */}
       {migrationStatus && (
         <div className={`migration-status ${migrationStatus.success ? 'success' : 'error'}`}>
-          <span>{migrationStatus.success ? 'â' : 'â'}</span>
+          <span>{migrationStatus.success ? '✅' : '❌'}</span>
           <div>
             <strong>{migrationStatus.success ? 'Success!' : 'Error!'}</strong>
             <p>{migrationStatus.message}</p>
           </div>
-          <button onClick={() => setMigrationStatus(null)} className="btn-close">â</button>
+          <button onClick={() => setMigrationStatus(null)} className="btn-close">✕</button>
         </div>
       )}
 
@@ -246,7 +246,7 @@ const AdminPanel = () => {
       {error && error.includes('api_key') && (
         <div className="migration-prompt">
           <div>
-            <strong>ð§ Database Migration Required</strong>
+            <strong>🔧 Database Migration Required</strong>
             <p>The api_key column needs to be added to support multi-client features.</p>
           </div>
           <button 
@@ -254,7 +254,7 @@ const AdminPanel = () => {
             className="btn-migrate"
             disabled={migrationLoading}
           >
-            {migrationLoading ? 'â³ Running Migration...' : 'ð Run Migration Now'}
+            {migrationLoading ? '⏳ Running Migration...' : '🚀 Run Migration Now'}
           </button>
         </div>
       )}
@@ -262,7 +262,7 @@ const AdminPanel = () => {
       {/* User Management Section */}
       <div className="admin-section">
         <div className="section-header">
-          <h2>ð¥ User Management</h2>
+          <h2>👥 User Management</h2>
           <button
             onClick={() => setShowAddUser(!showAddUser)}
             className="btn-add"
@@ -358,7 +358,7 @@ const AdminPanel = () => {
                         cursor: 'pointer'
                       }}
                     />
-                    ð­ Vendor Account
+                    🏭 Vendor Account
                   </label>
                   <p style={{
                     fontSize: '0.85rem',
@@ -533,7 +533,7 @@ const AdminPanel = () => {
                         </td>
                         <td>
                           <span style={{fontSize: '11px', color: user.api_key ? '#10b981' : '#ef4444'}}>
-                            {user.api_key ? 'â Configured' : 'â Not Set'}
+                            {user.api_key ? '✓ Configured' : '✗ Not Set'}
                           </span>
                         </td>
                         <td>
@@ -546,7 +546,7 @@ const AdminPanel = () => {
                               fontSize: '0.75rem',
                               fontWeight: '600'
                             }}>
-                              ð­ VENDOR
+                              🏭 VENDOR
                             </span>
                           ) : (
                             <span style={{
@@ -557,7 +557,7 @@ const AdminPanel = () => {
                               fontSize: '0.75rem',
                               fontWeight: '600'
                             }}>
-                              ð¦ CLIENT
+                              📦 CLIENT
                             </span>
                           )}
                         </td>
@@ -569,21 +569,21 @@ const AdminPanel = () => {
                             className="btn-edit"
                             title="Edit user"
                           >
-                            âï¸
+                            ✏️
                           </button>
                           <button
                             onClick={() => handleResetPassword(user.id, user.username)}
                             className="btn-reset"
                             title="Reset password"
                           >
-                            ð
+                            🔑
                           </button>
                           <button
                             onClick={() => handleDeleteUser(user.id, user.username)}
                             className="btn-delete"
                             title="Delete user"
                           >
-                            ðï¸
+                            🗑️
                           </button>
                         </td>
                       </>
@@ -599,9 +599,9 @@ const AdminPanel = () => {
       {/* Activity Logs Section */}
       <div className="admin-section">
         <div className="section-header">
-          <h2>ð Activity Logs</h2>
+          <h2>📝 Activity Logs</h2>
           <button onClick={fetchLogs} className="btn-refresh">
-            ð Refresh
+            🔄 Refresh
           </button>
         </div>
 

@@ -28,7 +28,7 @@ const VendorDashboard = ({ user }) => {
 
   const fetchPurchaseOrders = async () => {
     console.log('========================================');
-    console.log('ð­ VENDOR PORTAL - FETCHING PURCHASE ORDERS');
+    console.log('🏭 VENDOR PORTAL - FETCHING PURCHASE ORDERS');
     console.log('========================================');
     
     try {
@@ -41,7 +41,7 @@ const VendorDashboard = ({ user }) => {
         }
       });
       
-      console.log('ð¦ RAW RESPONSE FROM VENDOR API:');
+      console.log('📦 RAW RESPONSE FROM VENDOR API:');
       console.log('Response object:', response);
       console.log('Response data:', response.data);
       console.log('Response status:', response.status);
@@ -49,12 +49,12 @@ const VendorDashboard = ({ user }) => {
       // Carolina API returns { data: [...work orders with POs...] }
       const workOrders = response.data.data || response.data || [];
       
-      console.log('ð WORK ORDERS WITH POs:');
+      console.log('📋 WORK ORDERS WITH POs:');
       console.log('Total work orders:', workOrders.length);
       console.log('Work orders data:', workOrders);
       
       if (workOrders.length > 0) {
-        console.log('ð FIRST WORK ORDER SAMPLE:');
+        console.log('📌 FIRST WORK ORDER SAMPLE:');
         console.log(JSON.stringify(workOrders[0], null, 2));
       }
       
@@ -63,7 +63,7 @@ const VendorDashboard = ({ user }) => {
       const completed = [];
       
       workOrders.forEach((wo, index) => {
-        console.log(`\nð WORK ORDER #${index + 1}:`);
+        console.log(`\n🔍 WORK ORDER #${index + 1}:`);
         console.log('  ID:', wo.id);
         console.log('  DR Number:', wo.drNumber);
         console.log('  Work Order Number:', wo.workOrderNumber);
@@ -73,7 +73,7 @@ const VendorDashboard = ({ user }) => {
         
         if (wo.purchaseOrders && Array.isArray(wo.purchaseOrders)) {
           wo.purchaseOrders.forEach((po, poIndex) => {
-            console.log(`\n  ð¦ PO #${poIndex + 1}:`);
+            console.log(`\n  📦 PO #${poIndex + 1}:`);
             console.log('    PO Number:', po.poNumber);
             console.log('    PO Type:', po.poType);
             console.log('    Service Type:', po.serviceType);
@@ -97,18 +97,18 @@ const VendorDashboard = ({ user }) => {
             
             if (wo.status === 'completed' || wo.status === 'shipped') {
               completed.push(poData);
-              console.log('    â Added to COMPLETED');
+              console.log('    ✅ Added to COMPLETED');
             } else {
               activePOs.push(poData);
-              console.log('    ð Added to ACTIVE');
+              console.log('    📋 Added to ACTIVE');
             }
           });
         } else {
-          console.log('  â ï¸ No purchase orders array found!');
+          console.log('  ⚠️ No purchase orders array found!');
         }
       });
       
-      console.log('\nð FINAL RESULTS:');
+      console.log('\n📊 FINAL RESULTS:');
       console.log('Active POs:', activePOs.length);
       console.log('Completed POs:', completed.length);
       console.log('\nActive POs data:', activePOs);
@@ -126,18 +126,18 @@ const VendorDashboard = ({ user }) => {
         ).length
       };
       
-      console.log('\nð VENDOR STATS:');
+      console.log('\n📈 VENDOR STATS:');
       console.log(vendorStats);
       
       setStats(vendorStats);
       setLoading(false);
       
       console.log('========================================');
-      console.log('â VENDOR PORTAL FETCH COMPLETE');
+      console.log('✅ VENDOR PORTAL FETCH COMPLETE');
       console.log('========================================\n');
       
     } catch (err) {
-      console.error('â ERROR FETCHING VENDOR PURCHASE ORDERS:');
+      console.error('❌ ERROR FETCHING VENDOR PURCHASE ORDERS:');
       console.error('Error object:', err);
       console.error('Error message:', err.message);
       console.error('Error response:', err.response);
@@ -147,7 +147,7 @@ const VendorDashboard = ({ user }) => {
       setError('Failed to load purchase orders. Please try again.');
       
       if (err.response?.status === 401) {
-        console.log('ð Unauthorized - redirecting to login');
+        console.log('🔒 Unauthorized - redirecting to login');
         navigate('/login');
       }
       
@@ -253,8 +253,8 @@ const VendorDashboard = ({ user }) => {
           <div className="header-left">
             <img src="/logo.png" alt="Carolina Rolling Co Inc" className="dashboard-logo" />
             <div>
-              <h1>ð­ Vendor Portal</h1>
-              {user && <p className="welcome">Welcome, {user.username} â¢ {user.vendorCompanyName || user.company_name}</p>}
+              <h1>🏭 Vendor Portal</h1>
+              {user && <p className="welcome">Welcome, {user.username} • {user.vendorCompanyName || user.company_name}</p>}
             </div>
           </div>
           <div className="header-actions">
@@ -294,18 +294,18 @@ const VendorDashboard = ({ user }) => {
             {user?.role === 'admin' && (
               <Link to="/dashboard">
                 <button type="button" className="btn-admin">
-                  ð¦ Client Portal
+                  📦 Client Portal
                 </button>
               </Link>
             )}
 
             <button type="button" onClick={handleRefresh} className="btn-refresh" disabled={loading}>
-              {loading ? 'ð Refreshing...' : 'ð Refresh'}
+              {loading ? '🔄 Refreshing...' : '🔄 Refresh'}
             </button>
 
             <Link to="/vendor/issues">
               <button type="button" className="btn-admin">
-                â ï¸ Issues
+                ⚠️ Issues
               </button>
             </Link>
 
@@ -319,7 +319,7 @@ const VendorDashboard = ({ user }) => {
         <div className="search-container" style={{marginTop: '1rem', position: 'relative'}}>
           <input
             type="text"
-            placeholder="ð Search by PO#, DR#, Service Type, Part#..."
+            placeholder="🔍 Search by PO#, DR#, Service Type, Part#..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="search-input"
@@ -350,7 +350,7 @@ const VendorDashboard = ({ user }) => {
                 color: '#666'
               }}
             >
-              â
+              ✕
             </button>
           )}
         </div>
@@ -395,7 +395,7 @@ const VendorDashboard = ({ user }) => {
                   padding: 0
                 }}
               >
-                â
+                ✕
               </button>
               <p style={{
                 margin: 0,
@@ -423,7 +423,7 @@ const VendorDashboard = ({ user }) => {
 
       {error && (
         <div className="error-banner">
-          <span>â ï¸</span> {error}
+          <span>⚠️</span> {error}
         </div>
       )}
 
@@ -431,7 +431,7 @@ const VendorDashboard = ({ user }) => {
       {stats && (
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-icon">ð¦</div>
+            <div className="stat-icon">📦</div>
             <div className="stat-content">
               <div className="stat-value">{stats.totalPOs}</div>
               <div className="stat-label">Active Purchase Orders</div>
@@ -439,7 +439,7 @@ const VendorDashboard = ({ user }) => {
           </div>
           
           <div className="stat-card">
-            <div className="stat-icon">â</div>
+            <div className="stat-icon">✅</div>
             <div className="stat-content">
               <div className="stat-value">{stats.completedPOs}</div>
               <div className="stat-label">Completed Orders</div>
@@ -448,7 +448,7 @@ const VendorDashboard = ({ user }) => {
           
           {stats.pastDue > 0 && (
             <div className="stat-card">
-              <div className="stat-icon">â ï¸</div>
+              <div className="stat-icon">⚠️</div>
               <div className="stat-content">
                 <div className="stat-value" style={{color: '#e74c3c'}}>{stats.pastDue}</div>
                 <div className="stat-label">Past Due</div>
@@ -460,11 +460,11 @@ const VendorDashboard = ({ user }) => {
 
       {/* Active Purchase Orders */}
       <div className="section">
-        <h2 className="section-title">ð Active Purchase Orders</h2>
+        <h2 className="section-title">📋 Active Purchase Orders</h2>
         
         {filteredActivePOs.length === 0 ? (
           <div className="empty-state">
-            <div className="empty-icon">ð­</div>
+            <div className="empty-icon">📭</div>
             <h3>No active purchase orders</h3>
             <p>You'll see purchase orders here when work is assigned to you.</p>
           </div>
@@ -475,10 +475,10 @@ const VendorDashboard = ({ user }) => {
                 <div className="card-header">
                   <div>
                     <h3>
-                      {po.poType === 'outside_processing' ? 'ð¦' : 'ð'} {po.poNumber}
+                      {po.poType === 'outside_processing' ? '📦' : '🚛'} {po.poNumber}
                     </h3>
                     <p className="wo-number">
-                      DR-{po.workOrder.drNumber} â¢ {po.workOrder.workOrderNumber}
+                      DR-{po.workOrder.drNumber} • {po.workOrder.workOrderNumber}
                     </p>
                   </div>
                   <span 
@@ -501,8 +501,8 @@ const VendorDashboard = ({ user }) => {
                   {po.partNumber && (
                     <p>
                       <strong>Part #{po.partNumber}</strong>
-                      {po.clientPartNumber && ` â¢ ${po.clientPartNumber}`}
-                      {po.quantity && ` â¢ Qty: ${po.quantity}`}
+                      {po.clientPartNumber && ` • ${po.clientPartNumber}`}
+                      {po.quantity && ` • Qty: ${po.quantity}`}
                     </p>
                   )}
                   
@@ -521,7 +521,7 @@ const VendorDashboard = ({ user }) => {
                       }}
                     >
                       <strong>Due:</strong> {formatDate(po.workOrder.promisedDate)}
-                      {isPastDue(po.workOrder.promisedDate) && ' â ï¸ PAST DUE'}
+                      {isPastDue(po.workOrder.promisedDate) && ' ⚠️ PAST DUE'}
                     </p>
                   )}
 
@@ -554,7 +554,7 @@ const VendorDashboard = ({ user }) => {
                         opacity: 0.8
                       }}
                     >
-                      ð Files
+                      📁 Files
                     </button>
                   </div>
                 </div>
@@ -568,7 +568,7 @@ const VendorDashboard = ({ user }) => {
       {completedOrders.length > 0 && (
         <div className="section">
           <div className="section-header-toggle">
-            <h2 className="section-title">â Completed Orders ({completedOrders.length})</h2>
+            <h2 className="section-title">✅ Completed Orders ({completedOrders.length})</h2>
             <button 
               onClick={() => setShowCompleted(!showCompleted)} 
               className="toggle-btn"
@@ -584,10 +584,10 @@ const VendorDashboard = ({ user }) => {
                   <div className="card-header">
                     <div>
                       <h3>
-                        {po.poType === 'outside_processing' ? 'ð¦' : 'ð'} {po.poNumber}
+                        {po.poType === 'outside_processing' ? '📦' : '🚛'} {po.poNumber}
                       </h3>
                       <p className="wo-number">
-                        DR-{po.workOrder.drNumber} â¢ {po.workOrder.workOrderNumber}
+                        DR-{po.workOrder.drNumber} • {po.workOrder.workOrderNumber}
                       </p>
                     </div>
                     <span 
@@ -606,12 +606,12 @@ const VendorDashboard = ({ user }) => {
                     {po.partNumber && (
                       <p>
                         <strong>Part #{po.partNumber}</strong>
-                        {po.clientPartNumber && ` â¢ ${po.clientPartNumber}`}
+                        {po.clientPartNumber && ` • ${po.clientPartNumber}`}
                       </p>
                     )}
                     
                     <p className="date completed">
-                      â Completed
+                      ✅ Completed
                     </p>
                   </div>
                 </div>

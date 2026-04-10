@@ -145,13 +145,13 @@ const VendorPODetail = () => {
 
   const getViewButtonText = (file) => {
     if (file.fileType === 'step_file') {
-      return 'ð§ View 3D';
+      return '🧊 View 3D';
     } else if (file.fileType === 'dxf') {
-      return 'ð View 2D';
+      return '📐 View 2D';
     } else if (file.mimeType === 'application/pdf') {
-      return 'ðï¸ View PDF';
+      return '👁️ View PDF';
     } else {
-      return 'ðï¸ View';
+      return '👁️ View';
     }
   };
 
@@ -200,7 +200,7 @@ const VendorPODetail = () => {
         <div className="error-message">
           <p>{error || 'Purchase order not found'}</p>
           <button onClick={goBack} className="btn btn-primary">
-            â Back to Purchase Orders
+            ← Back to Purchase Orders
           </button>
         </div>
       </div>
@@ -220,7 +220,7 @@ const VendorPODetail = () => {
           <div className="header-content">
             <div className="header-left">
               <button onClick={goBack} className="btn btn-back">
-                â Back
+                ← Back
               </button>
               <div>
                 <h1>PO: {purchaseOrder.poNumber}</h1>
@@ -231,7 +231,7 @@ const VendorPODetail = () => {
             </div>
             <div className="header-right">
               <button onClick={() => navigate('/vendor/issues')} className="btn btn-secondary">
-                â ï¸ Report Issue
+                ⚠️ Report Issue
               </button>
             </div>
           </div>
@@ -244,7 +244,7 @@ const VendorPODetail = () => {
             {/* Work Order Info */}
             <section className="dashboard-section">
               <div className="section-header">
-                <h2>ð Work Order Information</h2>
+                <h2>📋 Work Order Information</h2>
               </div>
               <div className="info-card">
                 <div className="info-grid">
@@ -267,7 +267,7 @@ const VendorPODetail = () => {
                       <span className="info-label">Due Date:</span>
                       <span className={`info-value ${isPastDue(workOrder.promisedDate) ? 'text-danger' : ''}`}>
                         {formatDate(workOrder.promisedDate)}
-                        {isPastDue(workOrder.promisedDate) && ' â ï¸ PAST DUE'}
+                        {isPastDue(workOrder.promisedDate) && ' ⚠️ PAST DUE'}
                       </span>
                     </div>
                   )}
@@ -278,7 +278,7 @@ const VendorPODetail = () => {
             {/* Purchase Order Info */}
             <section className="dashboard-section">
               <div className="section-header">
-                <h2>ð¦ Purchase Order Details</h2>
+                <h2>📦 Purchase Order Details</h2>
               </div>
               <div className="info-card">
                 <div className="info-grid">
@@ -317,7 +317,7 @@ const VendorPODetail = () => {
             {/* Parts */}
             <section className="dashboard-section">
               <div className="section-header">
-                <h2>ð§ Parts ({parts?.length || 0})</h2>
+                <h2>🔧 Parts ({parts?.length || 0})</h2>
               </div>
 
               {!parts || parts.length === 0 ? (
@@ -333,7 +333,7 @@ const VendorPODetail = () => {
                         <h3>
                           Part #{part.partNumber}
                           {part.clientPartNumber && (
-                            <span className="client-part-number"> â¢ {part.clientPartNumber}</span>
+                            <span className="client-part-number"> • {part.clientPartNumber}</span>
                           )}
                         </h3>
                         <span className={`status-badge status-${part.status}`}>
@@ -390,7 +390,7 @@ const VendorPODetail = () => {
 
                         {part.specialInstructions && (
                           <div className="special-instructions">
-                            <strong>â ï¸ Special Instructions:</strong>
+                            <strong>⚠️ Special Instructions:</strong>
                             <p>{part.specialInstructions}</p>
                           </div>
                         )}
@@ -403,9 +403,9 @@ const VendorPODetail = () => {
                             className="section-toggle"
                             onClick={() => toggleSection(`files-${part.id}`)}
                           >
-                            <span>ð Files ({part.files.length})</span>
+                            <span>📁 Files ({part.files.length})</span>
                             <span className="toggle-icon">
-                              {expandedSections[`files-${part.id}`] ? 'â¼' : 'â¶'}
+                              {expandedSections[`files-${part.id}`] ? '▼' : '▶'}
                             </span>
                           </button>
 
@@ -418,7 +418,7 @@ const VendorPODetail = () => {
                                     <div className="file-details">
                                       <div className="file-name">{file.originalName}</div>
                                       <div className="file-meta">
-                                        {file.fileType.replace(/_/g, ' ')} â¢ {formatFileSize(file.size)}
+                                        {file.fileType.replace(/_/g, ' ')} • {formatFileSize(file.size)}
                                       </div>
                                     </div>
                                   </div>
@@ -433,7 +433,7 @@ const VendorPODetail = () => {
                                       onClick={() => handleDownloadFile(file)}
                                       className="btn btn-sm btn-secondary"
                                     >
-                                      ð¥ Download
+                                      📥 Download
                                     </button>
                                   </div>
                                 </div>
@@ -449,7 +449,7 @@ const VendorPODetail = () => {
                           onClick={() => handleReportIssue(part)}
                           className="btn btn-warning"
                         >
-                          â ï¸ Report Issue with This Part
+                          ⚠️ Report Issue with This Part
                         </button>
                       </div>
                     </div>

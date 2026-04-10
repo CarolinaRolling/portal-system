@@ -32,9 +32,9 @@ function App() {
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       const response = await axios.get('/api/auth/me');
       setUser(response.data);
-      console.log('â User authenticated:', response.data);
+      console.log('✅ User authenticated:', response.data);
     } catch (error) {
-      console.error('â Auth check failed:', error);
+      console.error('❌ Auth check failed:', error);
       localStorage.removeItem('token');
       delete axios.defaults.headers.common['Authorization'];
     } finally {

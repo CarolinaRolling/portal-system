@@ -156,9 +156,9 @@ const VendorIssues = () => {
         <div className="header-content">
           <div className="header-left">
             <button onClick={goBack} className="btn btn-back">
-              â Back
+              ← Back
             </button>
-            <h1>â ï¸ Issues I Reported</h1>
+            <h1>⚠️ Issues I Reported</h1>
           </div>
           <div className="header-right">
             {!showReportModal && (
@@ -180,7 +180,7 @@ const VendorIssues = () => {
               <div className="modal-content">
                 <div className="modal-header">
                   <h2>Report Issue</h2>
-                  <button onClick={cancelReport} className="modal-close">â</button>
+                  <button onClick={cancelReport} className="modal-close">✕</button>
                 </div>
 
                 <form onSubmit={handleSubmitIssue} className="issue-form">
@@ -245,7 +245,7 @@ const VendorIssues = () => {
                       </small>
                     )}
                     <small className="form-hint">
-                      Max 10MB â¢ JPG, PNG, WebP
+                      Max 10MB • JPG, PNG, WebP
                     </small>
                   </div>
 
@@ -291,7 +291,7 @@ const VendorIssues = () => {
 
             {!loading && !error && issues.length === 0 && (
               <div className="empty-state">
-                <p>ð­ No issues reported yet</p>
+                <p>📭 No issues reported yet</p>
                 <p className="empty-state-subtitle">
                   Report any questions or problems you encounter with purchase orders.
                 </p>
@@ -303,7 +303,7 @@ const VendorIssues = () => {
                 {/* Open Issues */}
                 {openIssues.length > 0 && (
                   <div className="issues-group">
-                    <h3 className="group-title">â ï¸ Open Issues ({openIssues.length})</h3>
+                    <h3 className="group-title">⚠️ Open Issues ({openIssues.length})</h3>
                     {openIssues.map((issue) => (
                       <div key={issue.id} className={`issue-card issue-${issue.status}`}>
                         <div className="issue-header">
@@ -313,7 +313,7 @@ const VendorIssues = () => {
                             </span>
                             <span className="issue-wo">
                               {issue.workOrderNumber}
-                              {issue.poNumber && ` â¢ ${issue.poNumber}`}
+                              {issue.poNumber && ` • ${issue.poNumber}`}
                             </span>
                           </div>
                           <div className="issue-date">
@@ -333,7 +333,7 @@ const VendorIssues = () => {
                           {issue.photoUrl && (
                             <div className="issue-photo">
                               <a href={issue.photoUrl} target="_blank" rel="noopener noreferrer">
-                                ð· View Photo
+                                📷 View Photo
                               </a>
                             </div>
                           )}
@@ -347,7 +347,7 @@ const VendorIssues = () => {
                 {issues.filter(i => i.status === 'resolved').length > 0 && (
                   <div className="issues-group">
                     <h3 className="group-title">
-                      â Resolved Issues ({issues.filter(i => i.status === 'resolved').length})
+                      ✅ Resolved Issues ({issues.filter(i => i.status === 'resolved').length})
                     </h3>
                     {issues.filter(i => i.status === 'resolved').map((issue) => (
                       <div key={issue.id} className="issue-card issue-resolved">
@@ -356,7 +356,7 @@ const VendorIssues = () => {
                             <span className="status-badge status-resolved">RESOLVED</span>
                             <span className="issue-wo">
                               {issue.workOrderNumber}
-                              {issue.poNumber && ` â¢ ${issue.poNumber}`}
+                              {issue.poNumber && ` • ${issue.poNumber}`}
                             </span>
                           </div>
                           <div className="issue-date">
@@ -376,7 +376,7 @@ const VendorIssues = () => {
                           {issue.photoUrl && (
                             <div className="issue-photo">
                               <a href={issue.photoUrl} target="_blank" rel="noopener noreferrer">
-                                ð· View Photo
+                                📷 View Photo
                               </a>
                             </div>
                           )}

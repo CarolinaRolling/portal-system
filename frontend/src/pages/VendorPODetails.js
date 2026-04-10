@@ -20,7 +20,7 @@ const VendorPODetails = ({ user }) => {
 
   const fetchPODetails = async () => {
     console.log('========================================');
-    console.log('ð FETCHING PO DETAILS');
+    console.log('🔍 FETCHING PO DETAILS');
     console.log('PO Number:', poNumber);
     console.log('========================================');
 
@@ -35,7 +35,7 @@ const VendorPODetails = ({ user }) => {
         }
       });
 
-      console.log('ð¦ PO DETAILS RESPONSE:');
+      console.log('📦 PO DETAILS RESPONSE:');
       console.log('Response data:', response.data);
 
       const data = response.data.data || response.data;
@@ -47,7 +47,7 @@ const VendorPODetails = ({ user }) => {
       let allFiles = [];
       
       if (data.parts && Array.isArray(data.parts)) {
-        console.log('ð CHECKING PARTS FOR FILES');
+        console.log('📁 CHECKING PARTS FOR FILES');
         console.log('Total parts:', data.parts.length);
         
         data.parts.forEach((part, index) => {
@@ -61,7 +61,7 @@ const VendorPODetails = ({ user }) => {
             
             // Log each file's structure
             part.files.forEach((file, fileIndex) => {
-              console.log(`\n    ð File #${fileIndex + 1} structure:`);
+              console.log(`\n    📄 File #${fileIndex + 1} structure:`);
               console.log('      Full file object:', file);
               console.log('      file.id:', file.id);
               console.log('      file.filename:', file.filename);
@@ -77,21 +77,21 @@ const VendorPODetails = ({ user }) => {
           }
         });
         
-        console.log('\nð TOTAL FILES ACROSS ALL PARTS:', allFiles.length);
+        console.log('\n📊 TOTAL FILES ACROSS ALL PARTS:', allFiles.length);
         console.log('All files:', allFiles);
         setFiles(allFiles);
         
       } else {
-        console.log('ð NO PARTS ARRAY FOUND');
+        console.log('📁 NO PARTS ARRAY FOUND');
         setFiles([]);
       }
 
       setLoading(false);
-      console.log('â PO DETAILS LOADED');
+      console.log('✅ PO DETAILS LOADED');
       console.log('========================================');
 
     } catch (err) {
-      console.error('â ERROR FETCHING PO DETAILS:');
+      console.error('❌ ERROR FETCHING PO DETAILS:');
       console.error('Error:', err);
       console.error('Response:', err.response?.data);
       setError('Failed to load purchase order details');
@@ -100,7 +100,7 @@ const VendorPODetails = ({ user }) => {
   };
 
   const handleDownloadFile = async (fileId, fileName) => {
-    console.log('â¬ï¸ DOWNLOADING FILE:');
+    console.log('⬇️ DOWNLOADING FILE:');
     console.log('File ID:', fileId);
     console.log('File name:', fileName);
 
@@ -114,7 +114,7 @@ const VendorPODetails = ({ user }) => {
         }
       });
 
-      console.log('â FILE URL RECEIVED');
+      console.log('✅ FILE URL RECEIVED');
       console.log('Response:', response.data);
 
       // Extract the signed URL from the response
@@ -124,7 +124,7 @@ const VendorPODetails = ({ user }) => {
         throw new Error('No download URL in response');
       }
 
-      console.log('ð¥ Downloading from S3:', signedUrl);
+      console.log('📥 Downloading from S3:', signedUrl);
 
       // Create a temporary link to download from the signed URL
       const link = document.createElement('a');
@@ -135,10 +135,10 @@ const VendorPODetails = ({ user }) => {
       link.click();
       link.remove();
 
-      console.log('â FILE DOWNLOAD INITIATED');
+      console.log('✅ FILE DOWNLOAD INITIATED');
 
     } catch (err) {
-      console.error('â ERROR DOWNLOADING FILE:');
+      console.error('❌ ERROR DOWNLOADING FILE:');
       console.error(err);
       alert('Failed to download file: ' + (err.response?.data?.error || err.message));
     } finally {
@@ -147,10 +147,10 @@ const VendorPODetails = ({ user }) => {
   };
 
   const is3DViewable = (fileName) => {
-    console.log('ð Checking if 3D viewable:', fileName);
+    console.log('🔍 Checking if 3D viewable:', fileName);
     
     if (!fileName) {
-      console.log('  â No filename provided');
+      console.log('  ❌ No filename provided');
       return false;
     }
     
@@ -164,7 +164,7 @@ const VendorPODetails = ({ user }) => {
   };
 
   const handleView3D = async (fileId, fileName) => {
-    console.log('ð¨ OPENING 3D VIEWER');
+    console.log('🎨 OPENING 3D VIEWER');
     console.log('File ID:', fileId);
     console.log('File name:', fileName);
 
@@ -182,7 +182,7 @@ const VendorPODetails = ({ user }) => {
         throw new Error('No file URL in response');
       }
 
-      console.log('â Opening 3D viewer with URL:', signedUrl);
+      console.log('✅ Opening 3D viewer with URL:', signedUrl);
       
       setViewing3D({
         fileUrl: signedUrl,
@@ -190,7 +190,7 @@ const VendorPODetails = ({ user }) => {
       });
 
     } catch (err) {
-      console.error('â ERROR OPENING 3D VIEWER:');
+      console.error('❌ ERROR OPENING 3D VIEWER:');
       console.error(err);
       alert('Failed to open 3D viewer: ' + (err.response?.data?.error || err.message));
     }
@@ -236,7 +236,7 @@ const VendorPODetails = ({ user }) => {
     return (
       <div className="dashboard" style={{background: '#fef3c7', minHeight: '100vh', padding: '2rem'}}>
         <div className="error-banner">
-          <span>â ï¸</span> {error || 'Purchase order not found'}
+          <span>⚠️</span> {error || 'Purchase order not found'}
         </div>
         <button 
           onClick={() => navigate('/vendor/dashboard')}
@@ -251,7 +251,7 @@ const VendorPODetails = ({ user }) => {
             fontWeight: '600'
           }}
         >
-          â Back to Dashboard
+          ← Back to Dashboard
         </button>
       </div>
     );
@@ -265,7 +265,7 @@ const VendorPODetails = ({ user }) => {
           <div className="header-left">
             <img src="/logo.png" alt="Carolina Rolling Co Inc" className="dashboard-logo" />
             <div>
-              <h1>ð­ Purchase Order Details</h1>
+              <h1>🏭 Purchase Order Details</h1>
               <p className="welcome">PO #{poNumber}</p>
             </div>
           </div>
@@ -282,7 +282,7 @@ const VendorPODetails = ({ user }) => {
                 fontWeight: '600'
               }}
             >
-              â Back to Dashboard
+              ← Back to Dashboard
             </button>
           </div>
         </div>
@@ -305,10 +305,10 @@ const VendorPODetails = ({ user }) => {
           }}>
             <div>
               <h2 style={{margin: '0 0 0.5rem 0', fontSize: '1.5rem'}}>
-                {poData.poType === 'outside_processing' ? 'ð¦' : 'ð'} PO #{poNumber}
+                {poData.poType === 'outside_processing' ? '📦' : '🚛'} PO #{poNumber}
               </h2>
               <p style={{margin: 0, color: '#666'}}>
-                DR-{poData.workOrder?.drNumber} â¢ {poData.workOrder?.workOrderNumber}
+                DR-{poData.workOrder?.drNumber} • {poData.workOrder?.workOrderNumber}
               </p>
             </div>
             <span 
@@ -352,7 +352,7 @@ const VendorPODetails = ({ user }) => {
                 <p style={{margin: '0 0 0.25rem 0', color: '#666', fontSize: '0.875rem'}}>Part Number</p>
                 <p style={{margin: 0, fontWeight: '600'}}>
                   {poData.partNumber}
-                  {poData.clientPartNumber && <span style={{color: '#666'}}> â¢ {poData.clientPartNumber}</span>}
+                  {poData.clientPartNumber && <span style={{color: '#666'}}> • {poData.clientPartNumber}</span>}
                 </p>
               </div>
             )}
@@ -402,7 +402,7 @@ const VendorPODetails = ({ user }) => {
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
         }}>
           <h3 style={{margin: '0 0 1.5rem 0', fontSize: '1.25rem'}}>
-            ð Files ({files.length})
+            📁 Files ({files.length})
           </h3>
 
           {files.length === 0 ? (
@@ -411,7 +411,7 @@ const VendorPODetails = ({ user }) => {
               padding: '3rem 1rem',
               color: '#999'
             }}>
-              <div style={{fontSize: '3rem', marginBottom: '1rem'}}>ð­</div>
+              <div style={{fontSize: '3rem', marginBottom: '1rem'}}>📭</div>
               <p style={{margin: 0}}>No files attached to this purchase order</p>
             </div>
           ) : (
@@ -423,7 +423,7 @@ const VendorPODetails = ({ user }) => {
                 const fileName = file.filename || file.fileName || file.originalName || file.name || 'Unnamed File';
                 const is3D = is3DViewable(fileName);
                 
-                console.log('ð Rendering file:', {
+                console.log('🔍 Rendering file:', {
                   id: file.id,
                   fileName: fileName,
                   is3D: is3D,
@@ -453,11 +453,11 @@ const VendorPODetails = ({ user }) => {
                 >
                   <div style={{flex: 1}}>
                     <p style={{margin: '0 0 0.25rem 0', fontWeight: '600', fontSize: '1rem'}}>
-                      ð {fileName}
+                      📄 {fileName}
                     </p>
                     <p style={{margin: 0, color: '#666', fontSize: '0.875rem'}}>
                       Shared: {formatDate(file.sharedAt || file.createdAt || file.uploadedAt)}
-                      {is3D && <span style={{marginLeft: '0.5rem', color: '#8b5cf6'}}>â¢ 3D Viewable</span>}
+                      {is3D && <span style={{marginLeft: '0.5rem', color: '#8b5cf6'}}>• 3D Viewable</span>}
                     </p>
                   </div>
                   <div style={{display: 'flex', gap: '0.5rem'}}>
@@ -482,7 +482,7 @@ const VendorPODetails = ({ user }) => {
                           e.currentTarget.style.background = '#8b5cf6';
                         }}
                       >
-                        ð¨ View 3D
+                        🎨 View 3D
                       </button>
                     )}
                     <button
@@ -510,7 +510,7 @@ const VendorPODetails = ({ user }) => {
                         }
                       }}
                     >
-                      {downloadingFile === file.id ? 'â³ Downloading...' : 'â¬ï¸ Download'}
+                      {downloadingFile === file.id ? '⏳ Downloading...' : '⬇️ Download'}
                     </button>
                   </div>
                 </div>

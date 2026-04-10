@@ -17,7 +17,7 @@ const Login = () => {
     setLoading(true);
 
     try {
-      console.log(`ð LOGIN ATTEMPT (${loginMode} mode):`);
+      console.log(`🔐 LOGIN ATTEMPT (${loginMode} mode):`);
       console.log('Username:', username);
       
       const response = await axios.post('/api/auth/login', {
@@ -25,12 +25,12 @@ const Login = () => {
         password
       });
 
-      console.log('â LOGIN SUCCESSFUL');
+      console.log('✅ LOGIN SUCCESSFUL');
       console.log('Response data:', response.data);
 
       const { token, user: userData } = response.data;
 
-      console.log('ð¤ USER DATA:');
+      console.log('👤 USER DATA:');
       console.log('  Username:', userData.username);
       console.log('  Company:', userData.company_name);
       console.log('  Role:', userData.role);
@@ -41,21 +41,21 @@ const Login = () => {
       if (loginMode === 'vendor') {
         // User clicked "Vendor Login" - must be a vendor
         if (!userData.isVendor) {
-          console.log('â User is not a vendor - rejecting login');
+          console.log('❌ User is not a vendor - rejecting login');
           setError('This account is not a vendor account. Please use Client Login.');
           setLoading(false);
           return;
         }
-        console.log('â Vendor login validated');
+        console.log('✅ Vendor login validated');
       } else {
         // User clicked "Client Login" - must NOT be vendor-only
         if (userData.isVendor && userData.role !== 'admin') {
-          console.log('â User is vendor-only - rejecting client login');
+          console.log('❌ User is vendor-only - rejecting client login');
           setError('This is a vendor account. Please use Vendor Login.');
           setLoading(false);
           return;
         }
-        console.log('â Client login validated');
+        console.log('✅ Client login validated');
       }
 
       // Store token
@@ -64,19 +64,19 @@ const Login = () => {
       // Store vendor name if vendor
       if (userData.isVendor) {
         localStorage.setItem('vendorName', userData.vendorCompanyName || userData.company_name);
-        console.log('ð­ Vendor account detected - stored vendor name');
+        console.log('🏭 Vendor account detected - stored vendor name');
       }
 
       // Set default authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
 
-      console.log('ð Redirecting to dashboard...');
+      console.log('🔄 Redirecting to dashboard...');
       
       // Always go to dashboard - App.js routing handles the rest
       window.location.href = '/dashboard';
       
     } catch (err) {
-      console.error('â LOGIN ERROR:');
+      console.error('❌ LOGIN ERROR:');
       console.error('Error:', err);
       console.error('Error response:', err.response?.data);
       
@@ -103,7 +103,7 @@ const Login = () => {
       background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
       buttonColor: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
       accentColor: '#f59e0b',
-      title: 'ð­ Vendor Login',
+      title: '🏭 Vendor Login',
       subtitle: 'Sign in to vendor portal'
     }
   };
@@ -141,7 +141,7 @@ const Login = () => {
           e.currentTarget.style.transform = 'translateY(0)';
         }}
       >
-        {loginMode === 'client' ? 'ð­ Vendor Login' : 'ð¦ Client Login'}
+        {loginMode === 'client' ? '🏭 Vendor Login' : '📦 Client Login'}
       </button>
 
       <div className="login-box">
@@ -158,7 +158,7 @@ const Login = () => {
 
         {error && (
           <div className="error-message">
-            <span>â ï¸</span> {error}
+            <span>⚠️</span> {error}
           </div>
         )}
 

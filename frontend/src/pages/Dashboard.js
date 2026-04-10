@@ -58,7 +58,7 @@ const Dashboard = ({ user }) => {
       );
       
       if (fetchedWorkOrders.length !== uniqueWorkOrders.length) {
-        console.warn(`â ï¸ Removed ${fetchedWorkOrders.length - uniqueWorkOrders.length} duplicate work orders from API response`);
+        console.warn(`⚠️ Removed ${fetchedWorkOrders.length - uniqueWorkOrders.length} duplicate work orders from API response`);
         console.log(`Before deduplication: ${fetchedWorkOrders.length} work orders`);
         console.log(`After deduplication: ${uniqueWorkOrders.length} work orders`);
       }
@@ -155,7 +155,7 @@ const Dashboard = ({ user }) => {
       console.log('Recently shipped - Unique IDs:', uniqueIds.size);
       console.log('Recently shipped - Unique DR numbers:', uniqueDrNumbers.size);
       if (recent.length !== uniqueIds.size) {
-        console.warn('â ï¸ DUPLICATE IDs DETECTED IN RECENTLY SHIPPED!');
+        console.warn('⚠️ DUPLICATE IDs DETECTED IN RECENTLY SHIPPED!');
         console.log('IDs:', recentIds);
         console.log('DR Numbers:', recentDrNumbers);
       }
@@ -736,15 +736,15 @@ const Dashboard = ({ user }) => {
 
   const getStatusIcon = (status) => {
     const statusLower = (status || '').toLowerCase();
-    if (statusLower === 'sent') return 'ð§';
-    if (statusLower === 'accepted') return 'â';
-    if (statusLower === 'declined') return 'â';
-    if (statusLower === 'processing') return 'ð§';
-    if (statusLower === 'stored') return 'ð¦';
-    if (statusLower === 'shipped') return 'ð';
-    if (statusLower === 'picked up') return 'â';
-    if (statusLower === 'waiting for material') return 'â³';
-    return 'ð';
+    if (statusLower === 'sent') return '📧';
+    if (statusLower === 'accepted') return '✅';
+    if (statusLower === 'declined') return '❌';
+    if (statusLower === 'processing') return '🔧';
+    if (statusLower === 'stored') return '📦';
+    if (statusLower === 'shipped') return '🚚';
+    if (statusLower === 'picked up') return '✅';
+    if (statusLower === 'waiting for material') return '⏳';
+    return '📋';
   };
 
   if (loading && !recentEstimates.length && !olderEstimates.length && !workOrders.length) {
@@ -767,7 +767,7 @@ const Dashboard = ({ user }) => {
             <img src="/logo.png" alt="Carolina Rolling Co Inc" className="dashboard-logo" />
             <div>
               <h1>Order Portal</h1>
-              {user && <p className="welcome">Welcome, {user.username} â¢ {user.company_name}</p>}
+              {user && <p className="welcome">Welcome, {user.username} • {user.company_name}</p>}
             </div>
           </div>
           <div className="header-actions">
@@ -803,12 +803,12 @@ const Dashboard = ({ user }) => {
               />
             </button>
             <button type="button" onClick={handleRefresh} className="btn-refresh" disabled={loading}>
-              {loading ? 'ð Refreshing...' : 'ð Refresh'}
+              {loading ? '🔄 Refreshing...' : '🔄 Refresh'}
             </button>
             {user?.role === 'admin' && (
               <Link to="/admin">
               <button type="button" className="btn-admin">
-                âï¸ Admin Panel
+                ⚙️ Admin Panel
               </button>
             </Link>
           )}
@@ -822,7 +822,7 @@ const Dashboard = ({ user }) => {
         <div className="search-container" style={{marginTop: '1rem', position: 'relative'}}>
           <input
             type="text"
-            placeholder="ð Search by DR#, PO#, Estimate#, Work Order#..."
+            placeholder="🔍 Search by DR#, PO#, Estimate#, Work Order#..."
             value={searchTerm}
             onChange={(e) => {
               try {
@@ -865,7 +865,7 @@ const Dashboard = ({ user }) => {
                 color: '#666'
               }}
             >
-              â
+              ✕
             </button>
           )}
         </div>
@@ -957,7 +957,7 @@ const Dashboard = ({ user }) => {
                 }}
                 title="Close"
               >
-                â
+                ✕
               </button>
             </div>
           </div>
@@ -968,18 +968,18 @@ const Dashboard = ({ user }) => {
       {stats && (
         <div className="stats-grid">
           <div className="stat-card">
-            <div className="stat-icon">ð</div>
+            <div className="stat-icon">📋</div>
             <div className="stat-content">
               <div className="stat-value">{stats.estimates.total || 0}</div>
               <div className="stat-label">Total Estimates</div>
               <div className="stat-details">
-                {stats.estimates.sent || 0} sent â¢ {stats.estimates.accepted || 0} accepted
+                {stats.estimates.sent || 0} sent • {stats.estimates.accepted || 0} accepted
               </div>
             </div>
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">ð§</div>
+            <div className="stat-icon">🔧</div>
             <div className="stat-content">
               <div className="stat-value">{stats.workOrders.processing || 0}</div>
               <div className="stat-label">In Production</div>
@@ -987,7 +987,7 @@ const Dashboard = ({ user }) => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">ð¦</div>
+            <div className="stat-icon">📦</div>
             <div className="stat-content">
               <div className="stat-value">{stats.workOrders.ready || 0}</div>
               <div className="stat-label">Ready for Pickup</div>
@@ -995,7 +995,7 @@ const Dashboard = ({ user }) => {
           </div>
 
           <div className="stat-card">
-            <div className="stat-icon">â</div>
+            <div className="stat-icon">✅</div>
             <div className="stat-content">
               <div className="stat-value">{stats.workOrders.completed || 0}</div>
               <div className="stat-label">Completed</div>
@@ -1006,14 +1006,14 @@ const Dashboard = ({ user }) => {
 
       {error && (
         <div className="error-banner">
-          <span>â ï¸</span> {error}
+          <span>⚠️</span> {error}
         </div>
       )}
 
       {/* Active Work Orders Section - FIRST */}
       {getFiltered(workOrders, 'workorder').length > 0 && (
         <div className="section">
-          <h2 className="section-title">ð§ Orders In Progress ({getFiltered(workOrders, 'workorder').length})</h2>
+          <h2 className="section-title">🔧 Orders In Progress ({getFiltered(workOrders, 'workorder').length})</h2>
           <p style={{fontSize: '0.9rem', color: '#666', marginBottom: '1rem'}}>
             Orders currently being processed
           </p>
@@ -1036,30 +1036,30 @@ const Dashboard = ({ user }) => {
                 </div>
                 <div className="card-body">
                   {wo.clientPurchaseOrderNumber && (
-                    <p className="po-number">ð Client PO: {wo.clientPurchaseOrderNumber}</p>
+                    <p className="po-number">📋 Client PO: {wo.clientPurchaseOrderNumber}</p>
                   )}
                   {wo.estimateNumber && (
-                    <p className="estimate-ref">ð Estimate: {wo.estimateNumber}</p>
+                    <p className="estimate-ref">📊 Estimate: {wo.estimateNumber}</p>
                   )}
                   {wo.orderNumber && (
-                    <p className="wo-number">ð§ Work Order: {wo.orderNumber}</p>
+                    <p className="wo-number">🔧 Work Order: {wo.orderNumber}</p>
                   )}
                   {wo.promisedDate && (
                     <p className="date promised">
-                      ð Anticipated Completion Date: {new Date(wo.promisedDate).toLocaleDateString()}
+                      📅 Anticipated Completion Date: {new Date(wo.promisedDate).toLocaleDateString()}
                     </p>
                   )}
                   {wo.receivedAt && (
-                    <p className="date">â Material Received: {new Date(wo.receivedAt).toLocaleDateString()}</p>
+                    <p className="date">✅ Material Received: {new Date(wo.receivedAt).toLocaleDateString()}</p>
                   )}
                   {wo.completedAt && (
-                    <p className="date completed">ð Completed: {new Date(wo.completedAt).toLocaleDateString()}</p>
+                    <p className="date completed">🎉 Completed: {new Date(wo.completedAt).toLocaleDateString()}</p>
                   )}
                   {wo.shippedAt && (
-                    <p className="date shipped">ð Shipped: {new Date(wo.shippedAt).toLocaleDateString()}</p>
+                    <p className="date shipped">🚚 Shipped: {new Date(wo.shippedAt).toLocaleDateString()}</p>
                   )}
                   {wo.pickedUpAt && (
-                    <p className="date picked-up">â Picked Up: {new Date(wo.pickedUpAt).toLocaleDateString()}</p>
+                    <p className="date picked-up">✅ Picked Up: {new Date(wo.pickedUpAt).toLocaleDateString()}</p>
                   )}
                   
                   {/* MTR Documents */}
@@ -1076,7 +1076,7 @@ const Dashboard = ({ user }) => {
                         onClick={() => toggleMTRs(wo.id)}
                       >
                         <p className="mtr-title" style={{margin: 0}}>
-                          ð Material Test Reports ({workOrderMTRs[wo.id].length})
+                          📄 Material Test Reports ({workOrderMTRs[wo.id].length})
                         </p>
                         <button 
                           className="toggle-btn"
@@ -1088,7 +1088,7 @@ const Dashboard = ({ user }) => {
                             padding: '0.25rem 0.5rem'
                           }}
                         >
-                          {expandedMTRs[wo.id] ? 'â¼ Hide' : 'â¶ Show'}
+                          {expandedMTRs[wo.id] ? '▼ Hide' : '▶ Show'}
                         </button>
                       </div>
                       
@@ -1108,7 +1108,7 @@ const Dashboard = ({ user }) => {
                                   }}
                                   title={`View ${mtr.originalName}`}
                                 >
-                                  ðï¸ View
+                                  👁️ View
                                 </button>
                                 <button
                                   className="mtr-download-btn"
@@ -1118,7 +1118,7 @@ const Dashboard = ({ user }) => {
                                   }}
                                   title={`Download ${mtr.originalName}`}
                                 >
-                                  ð¥ Download
+                                  📥 Download
                                 </button>
                               </div>
                             </div>
@@ -1142,7 +1142,7 @@ const Dashboard = ({ user }) => {
                         onClick={() => togglePortalDocs(wo.drNumber)}
                       >
                         <p className="mtr-title" style={{margin: 0}}>
-                          ð Documents ({workOrderPortalDocs[wo.drNumber].length})
+                          📋 Documents ({workOrderPortalDocs[wo.drNumber].length})
                         </p>
                         <button 
                           className="toggle-btn"
@@ -1154,7 +1154,7 @@ const Dashboard = ({ user }) => {
                             padding: '0.25rem 0.5rem'
                           }}
                         >
-                          {expandedPortalDocs[wo.drNumber] ? 'â¼ Hide' : 'â¶ Show'}
+                          {expandedPortalDocs[wo.drNumber] ? '▼ Hide' : '▶ Show'}
                         </button>
                       </div>
                       
@@ -1174,7 +1174,7 @@ const Dashboard = ({ user }) => {
                                   }}
                                   title={`View ${doc.name}`}
                                 >
-                                  ðï¸ View
+                                  👁️ View
                                 </button>
                                 <button
                                   className="mtr-download-btn"
@@ -1184,7 +1184,7 @@ const Dashboard = ({ user }) => {
                                   }}
                                   title={`Download ${doc.name}`}
                                 >
-                                  ð¥ Download
+                                  📥 Download
                                 </button>
                               </div>
                             </div>
@@ -1204,12 +1204,12 @@ const Dashboard = ({ user }) => {
       {getFiltered(recentlyShipped, 'workorder').length > 0 && (
         <div className="section">
           <div className="section-header-toggle">
-            <h2 className="section-title">ð¦ Recently Shipped ({getFiltered(recentlyShipped, 'workorder').length})</h2>
+            <h2 className="section-title">📦 Recently Shipped ({getFiltered(recentlyShipped, 'workorder').length})</h2>
             <button 
               className="toggle-btn"
               onClick={() => setShowRecent(!showRecent)}
             >
-              {showRecent ? 'â¼ Hide' : 'â¶ Show'}
+              {showRecent ? '▼ Hide' : '▶ Show'}
             </button>
           </div>
           <p style={{fontSize: '0.9rem', color: '#666', marginBottom: '1rem', marginTop: '0.5rem'}}>
@@ -1236,30 +1236,30 @@ const Dashboard = ({ user }) => {
                   </div>
                   <div className="card-body">
                     {wo.clientPurchaseOrderNumber && (
-                      <p className="po-number">ð Client PO: {wo.clientPurchaseOrderNumber}</p>
+                      <p className="po-number">📋 Client PO: {wo.clientPurchaseOrderNumber}</p>
                     )}
                     {wo.estimateNumber && (
-                      <p className="estimate-ref">ð Estimate: {wo.estimateNumber}</p>
+                      <p className="estimate-ref">📊 Estimate: {wo.estimateNumber}</p>
                     )}
                     {wo.orderNumber && (
-                      <p className="wo-number">ð§ Work Order: {wo.orderNumber}</p>
+                      <p className="wo-number">🔧 Work Order: {wo.orderNumber}</p>
                     )}
                     {wo.promisedDate && (
                       <p className="date promised">
-                        ð Anticipated Completion Date: {new Date(wo.promisedDate).toLocaleDateString()}
+                        📅 Anticipated Completion Date: {new Date(wo.promisedDate).toLocaleDateString()}
                       </p>
                     )}
                     {wo.receivedAt && (
-                      <p className="date">â Material Received: {new Date(wo.receivedAt).toLocaleDateString()}</p>
+                      <p className="date">✅ Material Received: {new Date(wo.receivedAt).toLocaleDateString()}</p>
                     )}
                     {wo.completedAt && (
-                      <p className="date completed">ð Completed: {new Date(wo.completedAt).toLocaleDateString()}</p>
+                      <p className="date completed">🎉 Completed: {new Date(wo.completedAt).toLocaleDateString()}</p>
                     )}
                     {wo.shippedAt && (
-                      <p className="date shipped">ð Shipped: {new Date(wo.shippedAt).toLocaleDateString()}</p>
+                      <p className="date shipped">🚚 Shipped: {new Date(wo.shippedAt).toLocaleDateString()}</p>
                     )}
                     {wo.pickedUpAt && (
-                      <p className="date picked-up">â Picked Up: {new Date(wo.pickedUpAt).toLocaleDateString()}</p>
+                      <p className="date picked-up">✅ Picked Up: {new Date(wo.pickedUpAt).toLocaleDateString()}</p>
                     )}
                     
                     {/* MTR Documents */}
@@ -1276,7 +1276,7 @@ const Dashboard = ({ user }) => {
                           onClick={() => toggleMTRs(wo.id)}
                         >
                           <p className="mtr-title" style={{margin: 0}}>
-                            ð Material Test Reports ({workOrderMTRs[wo.id].length})
+                            📄 Material Test Reports ({workOrderMTRs[wo.id].length})
                           </p>
                           <button 
                             className="toggle-btn"
@@ -1288,7 +1288,7 @@ const Dashboard = ({ user }) => {
                               padding: '0.25rem 0.5rem'
                             }}
                           >
-                            {expandedMTRs[wo.id] ? 'â¼ Hide' : 'â¶ Show'}
+                            {expandedMTRs[wo.id] ? '▼ Hide' : '▶ Show'}
                           </button>
                         </div>
                         
@@ -1308,7 +1308,7 @@ const Dashboard = ({ user }) => {
                                     }}
                                     title={`View ${mtr.originalName}`}
                                   >
-                                    ðï¸ View
+                                    👁️ View
                                   </button>
                                   <button
                                     className="mtr-download-btn"
@@ -1318,7 +1318,7 @@ const Dashboard = ({ user }) => {
                                     }}
                                     title={`Download ${mtr.originalName}`}
                                   >
-                                    ð¥ Download
+                                    📥 Download
                                   </button>
                                 </div>
                               </div>
@@ -1342,7 +1342,7 @@ const Dashboard = ({ user }) => {
                           onClick={() => togglePortalDocs(wo.drNumber)}
                         >
                           <p className="mtr-title" style={{margin: 0}}>
-                            ð Documents ({workOrderPortalDocs[wo.drNumber].length})
+                            📋 Documents ({workOrderPortalDocs[wo.drNumber].length})
                           </p>
                           <button 
                             className="toggle-btn"
@@ -1354,7 +1354,7 @@ const Dashboard = ({ user }) => {
                               padding: '0.25rem 0.5rem'
                             }}
                           >
-                            {expandedPortalDocs[wo.drNumber] ? 'â¼ Hide' : 'â¶ Show'}
+                            {expandedPortalDocs[wo.drNumber] ? '▼ Hide' : '▶ Show'}
                           </button>
                         </div>
                         
@@ -1374,7 +1374,7 @@ const Dashboard = ({ user }) => {
                                     }}
                                     title={`View ${doc.name}`}
                                   >
-                                    ðï¸ View
+                                    👁️ View
                                   </button>
                                   <button
                                     className="mtr-download-btn"
@@ -1384,7 +1384,7 @@ const Dashboard = ({ user }) => {
                                     }}
                                     title={`Download ${doc.name}`}
                                   >
-                                    ð¥ Download
+                                    📥 Download
                                   </button>
                                 </div>
                               </div>
@@ -1438,7 +1438,7 @@ const Dashboard = ({ user }) => {
           {showCompleted && (
             <>
               <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
-                <h2 className="section-title">ð¦ Order History ({getFiltered(completedOrders, 'workorder').length})</h2>
+                <h2 className="section-title">📦 Order History ({getFiltered(completedOrders, 'workorder').length})</h2>
                 <button 
                   className="toggle-btn"
                   onClick={() => setShowCompleted(false)}
@@ -1451,7 +1451,7 @@ const Dashboard = ({ user }) => {
                     cursor: 'pointer'
                   }}
                 >
-                  â² Hide
+                  ▲ Hide
                 </button>
               </div>
               <div className="cards-grid">
@@ -1473,25 +1473,25 @@ const Dashboard = ({ user }) => {
                   </div>
                   <div className="card-body">
                     {wo.clientPurchaseOrderNumber && (
-                      <p className="po-number">ð Client PO: {wo.clientPurchaseOrderNumber}</p>
+                      <p className="po-number">📋 Client PO: {wo.clientPurchaseOrderNumber}</p>
                     )}
                     {wo.estimateNumber && (
-                      <p className="estimate-ref">ð Estimate: {wo.estimateNumber}</p>
+                      <p className="estimate-ref">📊 Estimate: {wo.estimateNumber}</p>
                     )}
                     {wo.orderNumber && (
-                      <p className="wo-number">ð§ Work Order: {wo.orderNumber}</p>
+                      <p className="wo-number">🔧 Work Order: {wo.orderNumber}</p>
                     )}
                     {wo.receivedAt && (
-                      <p className="date">â Material Received: {new Date(wo.receivedAt).toLocaleDateString()}</p>
+                      <p className="date">✅ Material Received: {new Date(wo.receivedAt).toLocaleDateString()}</p>
                     )}
                     {wo.completedAt && (
-                      <p className="date completed">ð Completed: {new Date(wo.completedAt).toLocaleDateString()}</p>
+                      <p className="date completed">🎉 Completed: {new Date(wo.completedAt).toLocaleDateString()}</p>
                     )}
                     {wo.shippedAt && (
-                      <p className="date shipped">ð Shipped: {new Date(wo.shippedAt).toLocaleDateString()}</p>
+                      <p className="date shipped">🚚 Shipped: {new Date(wo.shippedAt).toLocaleDateString()}</p>
                     )}
                     {wo.pickedUpAt && (
-                      <p className="date picked-up">â Picked Up: {new Date(wo.pickedUpAt).toLocaleDateString()}</p>
+                      <p className="date picked-up">✅ Picked Up: {new Date(wo.pickedUpAt).toLocaleDateString()}</p>
                     )}
                     
                     {/* MTR Documents */}
@@ -1508,7 +1508,7 @@ const Dashboard = ({ user }) => {
                           onClick={() => toggleMTRs(wo.id)}
                         >
                           <p className="mtr-title" style={{margin: 0}}>
-                            ð Material Test Reports ({workOrderMTRs[wo.id].length})
+                            📄 Material Test Reports ({workOrderMTRs[wo.id].length})
                           </p>
                           <button 
                             className="toggle-btn"
@@ -1520,7 +1520,7 @@ const Dashboard = ({ user }) => {
                               padding: '0.25rem 0.5rem'
                             }}
                           >
-                            {expandedMTRs[wo.id] ? 'â¼ Hide' : 'â¶ Show'}
+                            {expandedMTRs[wo.id] ? '▼ Hide' : '▶ Show'}
                           </button>
                         </div>
                         
@@ -1540,7 +1540,7 @@ const Dashboard = ({ user }) => {
                                     }}
                                     title={`View ${mtr.originalName}`}
                                   >
-                                    ðï¸ View
+                                    👁️ View
                                   </button>
                                   <button
                                     className="mtr-download-btn"
@@ -1550,7 +1550,7 @@ const Dashboard = ({ user }) => {
                                     }}
                                     title={`Download ${mtr.originalName}`}
                                   >
-                                    ð¥ Download
+                                    📥 Download
                                   </button>
                                 </div>
                               </div>
@@ -1574,7 +1574,7 @@ const Dashboard = ({ user }) => {
                           onClick={() => togglePortalDocs(wo.drNumber)}
                         >
                           <p className="mtr-title" style={{margin: 0}}>
-                            ð Documents ({workOrderPortalDocs[wo.drNumber].length})
+                            📋 Documents ({workOrderPortalDocs[wo.drNumber].length})
                           </p>
                           <button 
                             className="toggle-btn"
@@ -1586,7 +1586,7 @@ const Dashboard = ({ user }) => {
                               padding: '0.25rem 0.5rem'
                             }}
                           >
-                            {expandedPortalDocs[wo.drNumber] ? 'â¼ Hide' : 'â¶ Show'}
+                            {expandedPortalDocs[wo.drNumber] ? '▼ Hide' : '▶ Show'}
                           </button>
                         </div>
                         
@@ -1606,7 +1606,7 @@ const Dashboard = ({ user }) => {
                                     }}
                                     title={`View ${doc.name}`}
                                   >
-                                    ðï¸ View
+                                    👁️ View
                                   </button>
                                   <button
                                     className="mtr-download-btn"
@@ -1616,7 +1616,7 @@ const Dashboard = ({ user }) => {
                                     }}
                                     title={`Download ${doc.name}`}
                                   >
-                                    ð¥ Download
+                                    📥 Download
                                   </button>
                                 </div>
                               </div>
@@ -1637,7 +1637,7 @@ const Dashboard = ({ user }) => {
       {/* Recent Estimates Section - FOURTH */}
       {getFiltered(recentEstimates, 'estimate').length > 0 && (
         <div className="section">
-          <h2 className="section-title">ð Recent Estimates ({getFiltered(recentEstimates, 'estimate').length})</h2>
+          <h2 className="section-title">📋 Recent Estimates ({getFiltered(recentEstimates, 'estimate').length})</h2>
           <p style={{fontSize: '0.9rem', color: '#666', marginBottom: '1rem'}}>
             Estimates created within the last 30 days
           </p>
@@ -1658,7 +1658,7 @@ const Dashboard = ({ user }) => {
                     <p className="amount">${parseFloat(estimate.grandTotal).toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
                   )}
                   {estimate.status === 'draft' && (
-                    <p className="draft-notice">ð¼ Estimate in progress...</p>
+                    <p className="draft-notice">💼 Estimate in progress...</p>
                   )}
                   {estimate.sentAt && (
                     <p className="date">Sent: {new Date(estimate.sentAt).toLocaleDateString()}</p>
@@ -1667,13 +1667,13 @@ const Dashboard = ({ user }) => {
                     <p className="date">Valid Until: {new Date(estimate.validUntil).toLocaleDateString()}</p>
                   )}
                   {estimate.acceptedAt && (
-                    <p className="date accepted">â Accepted: {new Date(estimate.acceptedAt).toLocaleDateString()}</p>
+                    <p className="date accepted">✅ Accepted: {new Date(estimate.acceptedAt).toLocaleDateString()}</p>
                   )}
                   
                   {/* Estimate PDF */}
                   {estimatePDFs[estimate.id] && (
                     <div className="mtr-section">
-                      <p className="mtr-title">ð Estimate PDF</p>
+                      <p className="mtr-title">📄 Estimate PDF</p>
                       <div className="mtr-list">
                         <button
                           className="mtr-download-btn"
@@ -1684,7 +1684,7 @@ const Dashboard = ({ user }) => {
                           )}
                           title="View Estimate PDF"
                         >
-                          ðï¸ View PDF
+                          👁️ View PDF
                         </button>
                         <button
                           className="mtr-download-btn"
@@ -1695,7 +1695,7 @@ const Dashboard = ({ user }) => {
                           )}
                           title="Download Estimate PDF"
                         >
-                          ð¥ Download PDF
+                          📥 Download PDF
                         </button>
                       </div>
                     </div>
@@ -1715,7 +1715,7 @@ const Dashboard = ({ user }) => {
                         onClick={() => toggleEstimateFiles(estimate.estimateNumber)}
                       >
                         <p className="mtr-title" style={{margin: 0}}>
-                          ð Additional Files ({estimatePortalFiles[estimate.estimateNumber].length})
+                          📎 Additional Files ({estimatePortalFiles[estimate.estimateNumber].length})
                         </p>
                         <button 
                           className="toggle-btn"
@@ -1727,7 +1727,7 @@ const Dashboard = ({ user }) => {
                             padding: '0.25rem 0.5rem'
                           }}
                         >
-                          {expandedEstimateFiles[estimate.estimateNumber] ? 'â¼ Hide' : 'â¶ Show'}
+                          {expandedEstimateFiles[estimate.estimateNumber] ? '▼ Hide' : '▶ Show'}
                         </button>
                       </div>
                       
@@ -1747,7 +1747,7 @@ const Dashboard = ({ user }) => {
                                   }}
                                   title={`View ${file.name}`}
                                 >
-                                  ðï¸ View
+                                  👁️ View
                                 </button>
                                 <button
                                   className="mtr-download-btn"
@@ -1757,7 +1757,7 @@ const Dashboard = ({ user }) => {
                                   }}
                                   title={`Download ${file.name}`}
                                 >
-                                  ð¥ Download
+                                  📥 Download
                                 </button>
                               </div>
                             </div>
@@ -1810,7 +1810,7 @@ const Dashboard = ({ user }) => {
           {showOlderEstimates && (
             <>
               <div style={{display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem'}}>
-                <h2 className="section-title">ð Older Estimates ({getFiltered(olderEstimates, 'estimate').length})</h2>
+                <h2 className="section-title">📋 Older Estimates ({getFiltered(olderEstimates, 'estimate').length})</h2>
                 <button 
                   className="toggle-btn"
                   onClick={() => setShowOlderEstimates(false)}
@@ -1823,7 +1823,7 @@ const Dashboard = ({ user }) => {
                     cursor: 'pointer'
                   }}
                 >
-                  â² Hide
+                  ▲ Hide
                 </button>
               </div>
               <div className="cards-grid">
@@ -1843,7 +1843,7 @@ const Dashboard = ({ user }) => {
                       <p className="amount">${parseFloat(estimate.grandTotal).toLocaleString('en-US', {minimumFractionDigits: 2})}</p>
                     )}
                     {estimate.status === 'draft' && (
-                      <p className="draft-notice">ð¼ Estimate in progress...</p>
+                      <p className="draft-notice">💼 Estimate in progress...</p>
                     )}
                     {estimate.sentAt && (
                       <p className="date">Sent: {new Date(estimate.sentAt).toLocaleDateString()}</p>
@@ -1852,13 +1852,13 @@ const Dashboard = ({ user }) => {
                       <p className="date">Valid Until: {new Date(estimate.validUntil).toLocaleDateString()}</p>
                     )}
                     {estimate.acceptedAt && (
-                      <p className="date accepted">â Accepted: {new Date(estimate.acceptedAt).toLocaleDateString()}</p>
+                      <p className="date accepted">✅ Accepted: {new Date(estimate.acceptedAt).toLocaleDateString()}</p>
                     )}
                     
                     {/* Estimate PDF */}
                     {estimatePDFs[estimate.id] && (
                       <div className="mtr-section">
-                        <p className="mtr-title">ð Estimate PDF</p>
+                        <p className="mtr-title">📄 Estimate PDF</p>
                         <div className="mtr-list">
                           <button
                             className="mtr-download-btn"
@@ -1869,7 +1869,7 @@ const Dashboard = ({ user }) => {
                             )}
                             title="View Estimate PDF"
                           >
-                            ðï¸ View PDF
+                            👁️ View PDF
                           </button>
                           <button
                             className="mtr-download-btn"
@@ -1880,7 +1880,7 @@ const Dashboard = ({ user }) => {
                             )}
                             title="Download Estimate PDF"
                           >
-                            ð¥ Download PDF
+                            📥 Download PDF
                           </button>
                         </div>
                       </div>
@@ -1900,7 +1900,7 @@ const Dashboard = ({ user }) => {
                           onClick={() => toggleEstimateFiles(estimate.estimateNumber)}
                         >
                           <p className="mtr-title" style={{margin: 0}}>
-                            ð Additional Files ({estimatePortalFiles[estimate.estimateNumber].length})
+                            📎 Additional Files ({estimatePortalFiles[estimate.estimateNumber].length})
                           </p>
                           <button 
                             className="toggle-btn"
@@ -1912,7 +1912,7 @@ const Dashboard = ({ user }) => {
                               padding: '0.25rem 0.5rem'
                             }}
                           >
-                            {expandedEstimateFiles[estimate.estimateNumber] ? 'â¼ Hide' : 'â¶ Show'}
+                            {expandedEstimateFiles[estimate.estimateNumber] ? '▼ Hide' : '▶ Show'}
                           </button>
                         </div>
                         
@@ -1932,7 +1932,7 @@ const Dashboard = ({ user }) => {
                                     }}
                                     title={`View ${file.name}`}
                                   >
-                                    ðï¸ View
+                                    👁️ View
                                   </button>
                                   <button
                                     className="mtr-download-btn"
@@ -1942,7 +1942,7 @@ const Dashboard = ({ user }) => {
                                     }}
                                     title={`Download ${file.name}`}
                                   >
-                                    ð¥ Download
+                                    📥 Download
                                   </button>
                                 </div>
                               </div>
@@ -1963,7 +1963,7 @@ const Dashboard = ({ user }) => {
       {/* Empty State */}
       {!loading && recentEstimates.length === 0 && olderEstimates.length === 0 && workOrders.length === 0 && recentlyShipped.length === 0 && completedOrders.length === 0 && (
         <div className="empty-state">
-          <div className="empty-icon">ð­</div>
+          <div className="empty-icon">📭</div>
           <h3>No Orders Found</h3>
           <p>You don't have any estimates or work orders in the system yet.</p>
         </div>

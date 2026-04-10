@@ -28,15 +28,15 @@ const portalDB = new Pool({
 // Test connection
 portalDB.query('SELECT NOW()', (err) => {
   if (err) {
-    console.error('â Portal DB connection failed:', err.message);
+    console.error('❌ Portal DB connection failed:', err.message);
   } else {
-    console.log('â Connected to Portal database');
+    console.log('✅ Connected to Portal database');
   }
 });
 
 // Carolina API configuration
 const CAROLINA_API_URL = process.env.CAROLINA_API_URL || 'https://carolina-rolling-inventory-api-641af96c90aa.herokuapp.com/api';
-console.log('ð¡ Carolina API URL:', CAROLINA_API_URL);
+console.log('📡 Carolina API URL:', CAROLINA_API_URL);
 
 // ============================================
 // AUTHENTICATION MIDDLEWARE
@@ -1145,7 +1145,7 @@ if (process.env.NODE_ENV === 'production') {
 // ============================================
 
 app.listen(PORT, () => {
-  console.log(`â Server running on port ${PORT}`);
+  console.log(`✅ Server running on port ${PORT}`);
   console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
