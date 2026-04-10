@@ -93,7 +93,9 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
       }
 
       setLoadingMsg('Parsing STEP geometry...');
-      const occt = await initOpenCascade();
+      const occt = await initOpenCascade({
+        locateFile: (filename) => `/${filename}`
+      });
       const result = occt.ReadStepFile(fileBuffer, null);
 
       if (!result || !result.meshes || result.meshes.length === 0) {
