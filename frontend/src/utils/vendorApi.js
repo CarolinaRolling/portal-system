@@ -101,23 +101,28 @@ export const downloadFile = async (fileUrl, fileName) => {
 export const submitIssue = async (issueData) => {
   try {
     const formData = new FormData();
-    formData.append('poNumber', issueData.poNumber);
+    // Required by backend
+    if (issueData.workOrderId) formData.append('workOrderId', issueData.workOrderId);
+    if (issueData.workOrderPartId) formData.append('workOrderPartId', issueData.workOrderPartId);
+    if (issueData.poNumber) formData.append('poNumber', issueData.poNumber);
+    if (issueData.reportedBy) formData.append('reportedBy', issueData.reportedBy);
     formData.append('description', issueData.description);
-    formData.append('priority', issueData.priority);
-    
+    if (issueData.priority) formData.append('priority', issueData.priority);
+
     if (issueData.photo) {
       formData.append('photo', issueData.photo);
     }
-    
+
     const response = await axios.post(`${API_BASE_URL}/issues`, formData, {
       headers: {
         'Authorization': `Bearer ${getToken()}`,
         'Content-Type': 'multipart/form-data'
       }
     });
-    
+
     return response.data;
   } catch (error) {
+    console.error('submitIssue error:', error.response?.data || error.message);
     throw error;
   }
 };

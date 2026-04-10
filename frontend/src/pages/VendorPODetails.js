@@ -360,28 +360,9 @@ const VendorPODetails = ({ user }) => {
               </div>
             )}
 
-            {poData.clientPartNumber && (
-              <div>
-                <p style={{margin: '0 0 0.25rem 0', color: '#666', fontSize: '0.875rem'}}>Client PN</p>
-                <p style={{margin: 0, fontWeight: '600'}}>{poData.clientPartNumber}</p>
-              </div>
-            )}
 
-            {(poData.size || poData.dimensions || poData.thickness || poData.width || poData.length) && (
-              <div>
-                <p style={{margin: '0 0 0.25rem 0', color: '#666', fontSize: '0.875rem'}}>Size</p>
-                <p style={{margin: 0, fontWeight: '600'}}>
-                  {poData.size || poData.dimensions || [poData.thickness, poData.width, poData.length].filter(Boolean).join(' x ')}
-                </p>
-              </div>
-            )}
 
-            {(poData.diameter || poData.od || poData.outsideDiameter) && (
-              <div>
-                <p style={{margin: '0 0 0.25rem 0', color: '#666', fontSize: '0.875rem'}}>Diameter</p>
-                <p style={{margin: 0, fontWeight: '600'}}>{poData.diameter || poData.od || poData.outsideDiameter}</p>
-              </div>
-            )}
+
 
             {poData.quantity && (
               <div>
@@ -416,11 +397,22 @@ const VendorPODetails = ({ user }) => {
         {/* Line Items Section */}
         {parts.length > 0 ? parts.map((part, partIndex) => {
           const partFiles = part.files || [];
-          const partNum = part.partNumber || part.part_number || part.clientPartNumber || '';
-          const desc = part.description || part.serviceDescription || part.service_description || '';
-          const qty = part.quantity || part.qty || '';
-          const serviceNotes = part.serviceNotes || part.service_notes || part.notes || '';
-          const partId = part.id || part.workOrderPartId;
+          const partNum = part.clientPartNumber || part.partNumber || '';
+          const desc = part.materialDescription || '';
+          const serviceType = part.rollingDescription || part.partType || '';
+          const qty = part.quantity || '';
+          const serviceNotes = part.specialInstructions || '';
+          const partId = part.id;
+
+          // Build size string from available dimension fields
+          const dims = [
+            part.thickness && `${part.thickness}" thick`,
+            part.width && `${part.width}" wide`,
+            part.length && `${part.length}" long`,
+          ].filter(Boolean).join(' × ');
+          const diameter = part.outerDiameter || part.diameter || '';
+          const innerDia = part.innerDiameter || '';
+          const radius = part.radius || '';
 
           return (
             <div key={partId || partIndex} style={{
@@ -436,25 +428,40 @@ const VendorPODetails = ({ user }) => {
                   <h3 style={{margin: '0 0 0.35rem 0', fontSize: '1.1rem', color: '#1a1a1a'}}>
                     📦 Part #{partIndex + 1}{partNum ? `: ${partNum}` : ''}
                   </h3>
-                  {qty && (
-                    <span style={{display: 'inline-block', background: '#fef3c7', color: '#92400e', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '600', marginBottom: '0.35rem'}}>
-                      Qty: {qty}
-                    </span>
-                  )}
+                  <div style={{display: 'flex', flexWrap: 'wrap', gap: '0.4rem', margin: '0.35rem 0'}}>
+                    {qty > 0 && (
+                      <span style={{background: '#fef3c7', color: '#92400e', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '600'}}>
+                        Qty: {qty}
+                      </span>
+                    )}
+                    {serviceType && (
+                      <span style={{background: '#ede9fe', color: '#5b21b6', padding: '0.2rem 0.6rem', borderRadius: '4px', fontSize: '0.8rem', fontWeight: '600'}}>
+                        {serviceType}
+                      </span>
+                    )}
+                  </div>
                   {desc && (
-                    <p style={{margin: '0.35rem 0 0', color: '#333', fontSize: '0.95rem', lineHeight: 1.5}}>
+                    <p style={{margin: '0.35rem 0 0', color: '#333', fontSize: '0.9rem', lineHeight: 1.6}}>
                       {desc}
                     </p>
                   )}
+                  {(dims || diameter || innerDia || radius) && (
+                    <div style={{margin: '0.5rem 0 0', display: 'flex', flexWrap: 'wrap', gap: '0.75rem'}}>
+                      {dims && <span style={{fontSize: '0.85rem', color: '#444'}}>📐 <strong>Size:</strong> {dims}</span>}
+                      {diameter && <span style={{fontSize: '0.85rem', color: '#444'}}>⭕ <strong>OD:</strong> {diameter}"</span>}
+                      {innerDia && <span style={{fontSize: '0.85rem', color: '#444'}}>⭕ <strong>ID:</strong> {innerDia}"</span>}
+                      {radius && <span style={{fontSize: '0.85rem', color: '#444'}}>📏 <strong>Radius:</strong> {radius}"</span>}
+                    </div>
+                  )}
                   {serviceNotes && (
-                    <p style={{margin: '0.5rem 0 0', color: '#555', fontSize: '0.875rem', fontStyle: 'italic'}}>
-                      📝 Service Notes: {serviceNotes}
+                    <p style={{margin: '0.5rem 0 0', color: '#555', fontSize: '0.875rem', fontStyle: 'italic', borderLeft: '3px solid #f59e0b', paddingLeft: '0.6rem'}}>
+                      📝 {serviceNotes}
                     </p>
                   )}
                 </div>
                 <button
                   onClick={() => navigate('/vendor/issues', { state: {
-                    workOrderId: poData.workOrder?.id || poData.workOrderId || poData.id,
+                    workOrderId: poData.workOrder?.id,
                     workOrderPartId: partId,
                     poNumber: poNumber,
                     drNumber: poData.workOrder?.drNumber,

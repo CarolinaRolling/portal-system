@@ -128,7 +128,8 @@ const VendorIssues = () => {
       navigate('/vendor/dashboard');
     } catch (err) {
       console.error('Error reporting issue:', err);
-      alert('Failed to report issue. Please try again.');
+      const msg = err.response?.data?.error || err.response?.data?.message || err.message || 'Unknown error';
+      alert(`Failed to report issue: ${msg}`);
     } finally {
       setSubmitting(false);
     }
