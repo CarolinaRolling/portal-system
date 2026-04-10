@@ -7,7 +7,6 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
   const [loading, setLoading] = useState(true);
   const [loadingMsg, setLoadingMsg] = useState('Initializing viewer...');
   const [error, setError] = useState(null);
-  const sceneRef = useRef(null);
   const rendererRef = useRef(null);
   const cameraRef = useRef(null);
   const controlsRef = useRef(null);
@@ -16,36 +15,35 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf0f4f8);
-    sceneRef.current = scene;
+    const w = containerRef.current.clientWidth;
+    const h = containerRef.current.clientHeight;
 
-    const camera = new THREE.PerspectiveCamera(45, containerRef.current.clientWidth / containerRef.current.clientHeight, 0.01, 100000);
-    camera.position.set(0, 0, 500);
+    const scene = new THREE.Scene();
+    scene.background = new THREE.Color(0xe8ecf0);
+
+    const camera = new THREE.PerspectiveCamera(45, w / h, 0.01, 100000);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true });
-    renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+    renderer.setSize(w, h);
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.shadowMap.enabled = true;
+    renderer.localClippingEnabled = true;
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.minDistance = 0.1;
-    controls.maxDistance = 50000;
     controlsRef.current = controls;
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
-    const dir1 = new THREE.DirectionalLight(0xffffff, 0.8);
-    dir1.position.set(1, 2, 3);
-    scene.add(dir1);
-    const dir2 = new THREE.DirectionalLight(0xffffff, 0.4);
-    dir2.position.set(-2, -1, -1);
-    scene.add(dir2);
-    scene.add(new THREE.HemisphereLight(0xddeeff, 0x222233, 0.3));
+    // Lighting
+    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
+    const d1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    d1.position.set(5, 10, 7);
+    scene.add(d1);
+    const d2 = new THREE.DirectionalLight(0xffffff, 0.4);
+    d2.position.set(-5, -5, -5);
+    scene.add(d2);
 
     loadStepFile(fileUrl, scene, camera, controls);
 
@@ -58,9 +56,11 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
 
     const handleResize = () => {
       if (!containerRef.current) return;
-      camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
+      const w2 = containerRef.current.clientWidth;
+      const h2 = containerRef.current.clientHeight;
+      camera.aspect = w2 / h2;
       camera.updateProjectionMatrix();
-      renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
+      renderer.setSize(w2, h2);
     };
     window.addEventListener('resize', handleResize);
 
@@ -71,115 +71,113 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
       renderer.dispose();
       controls.dispose();
     };
-  }, [fileUrl, fileName]);
+  }, [fileUrl]);
 
   const loadStepFile = async (url, scene, camera, controls) => {
     try {
       setLoading(true);
       setLoadingMsg('Downloading STEP file...');
       const response = await fetch(url);
-      if (!response.ok) throw new Error('Failed to fetch file: ' + response.statusText);
+      if (!response.ok) throw new Error('Failed to fetch: ' + response.statusText);
       const arrayBuffer = await response.arrayBuffer();
-      const fileBuffer = new Uint8Array(arrayBuffer);
 
-      setLoadingMsg('Loading STEP parser (first load may take a moment)...');
-      let initOpenCascade;
-      try {
-        const mod = await import('occt-import-js');
-        initOpenCascade = mod.default;
-      } catch (e) {
-        throw new Error('STEP parser library not available. Please ensure occt-import-js is installed.');
-      }
+      setLoadingMsg('Loading STEP parser...');
+      const mod = await import('occt-import-js');
+      const initOpenCascade = mod.default;
 
       setLoadingMsg('Parsing STEP geometry...');
-      const occt = await initOpenCascade({
-        locateFile: (filename) => `/${filename}`
-      });
-      const result = occt.ReadStepFile(fileBuffer, null);
+      const occt = await initOpenCascade({ locateFile: (f) => `/${f}` });
+      const result = occt.ReadStepFile(new Uint8Array(arrayBuffer), null);
 
-      if (!result || !result.meshes || result.meshes.length === 0) {
+      if (!result || !result.meshes || result.meshes.length === 0)
         throw new Error('No geometry found in STEP file.');
-      }
 
       setLoadingMsg('Building 3D model...');
-      const colors = [0x4a90e2, 0x7ecba1, 0xf59e0b, 0xe05c5c, 0x9b59b6, 0x1abc9c];
+
+      const palette = [0x4a90e2, 0x7ecba1, 0xf59e0b, 0xe05c5c, 0x9b59b6, 0x1abc9c];
       const group = new THREE.Group();
 
       result.meshes.forEach((mesh, idx) => {
         const positions = new Float32Array(mesh.attributes.position.array);
-        const normals = mesh.attributes.normal ? new Float32Array(mesh.attributes.normal.array) : null;
         const indices = mesh.index ? new Uint32Array(mesh.index.array) : null;
 
-        // Check if any brep_faces have individual colors
-        const hasFaceColors = mesh.brep_faces && mesh.brep_faces.some(f => f.color);
+        // --- Solid back-face (renders inner surfaces, prevents see-through) ---
+        const geoBack = new THREE.BufferGeometry();
+        geoBack.setAttribute('position', new THREE.BufferAttribute(positions.slice(), 3));
+        if (indices) geoBack.setIndex(new THREE.BufferAttribute(indices.slice(), 1));
+        geoBack.computeVertexNormals();
 
-        if (hasFaceColors && indices) {
-          // Split geometry by face color groups
+        const baseColor = mesh.color
+          ? new THREE.Color(mesh.color[0], mesh.color[1], mesh.color[2])
+          : new THREE.Color(palette[idx % palette.length]);
+
+        // Back-face pass — slightly darker
+        const matBack = new THREE.MeshPhongMaterial({
+          color: baseColor.clone().multiplyScalar(0.6),
+          side: THREE.BackSide,
+          depthWrite: true,
+        });
+        group.add(new THREE.Mesh(geoBack, matBack));
+
+        // --- Front-face pass ---
+        const geoFront = new THREE.BufferGeometry();
+        geoFront.setAttribute('position', new THREE.BufferAttribute(positions.slice(), 3));
+        if (indices) geoFront.setIndex(new THREE.BufferAttribute(indices.slice(), 1));
+        geoFront.computeVertexNormals();
+
+        // Handle per-face colors if available
+        if (mesh.brep_faces && mesh.brep_faces.some(f => f.color) && indices) {
           mesh.brep_faces.forEach((face) => {
             if (face.first_index === undefined || face.last_index === undefined) return;
+            const fi = indices.slice(face.first_index, face.last_index + 1);
+            if (fi.length === 0) return;
 
-            const faceIndices = indices.slice(face.first_index, face.last_index + 1);
-            if (faceIndices.length === 0) return;
+            const fg = new THREE.BufferGeometry();
+            fg.setAttribute('position', new THREE.BufferAttribute(positions.slice(), 3));
+            fg.setIndex(new THREE.BufferAttribute(fi, 1));
+            fg.computeVertexNormals();
 
-            const faceGeo = new THREE.BufferGeometry();
-            faceGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            faceGeo.setIndex(new THREE.BufferAttribute(faceIndices, 1));
-            faceGeo.computeVertexNormals();
-
-            const faceColor = face.color
+            const fc = face.color
               ? new THREE.Color(face.color[0], face.color[1], face.color[2])
-              : mesh.color
-                ? new THREE.Color(mesh.color[0], mesh.color[1], mesh.color[2])
-                : new THREE.Color(colors[idx % colors.length]);
+              : baseColor;
 
-            const mat = new THREE.MeshPhongMaterial({ color: faceColor, shininess: 80, specular: new THREE.Color(0x222222), side: THREE.DoubleSide, depthWrite: true, transparent: false });
-            group.add(new THREE.Mesh(faceGeo, mat));
+            group.add(new THREE.Mesh(fg, new THREE.MeshPhongMaterial({
+              color: fc, shininess: 60, side: THREE.FrontSide, depthWrite: true,
+            })));
           });
-
-          // Edges over full mesh
-          const fullGeo = new THREE.BufferGeometry();
-          fullGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-          fullGeo.setIndex(new THREE.BufferAttribute(indices, 1));
-          const edges = new THREE.EdgesGeometry(fullGeo, 15);
-          group.add(new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, opacity: 0.12, transparent: true })));
-
         } else {
-          // Single color for whole mesh
-          const geometry = new THREE.BufferGeometry();
-          geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-          if (indices) geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-          geometry.computeVertexNormals();
-
-          const color = mesh.color
-            ? new THREE.Color(mesh.color[0], mesh.color[1], mesh.color[2])
-            : new THREE.Color(colors[idx % colors.length]);
-
-          const mat = new THREE.MeshPhongMaterial({ color, shininess: 80, specular: new THREE.Color(0x222222), side: THREE.DoubleSide, depthWrite: true, transparent: false });
-          group.add(new THREE.Mesh(geometry, mat));
-
-          const edges = new THREE.EdgesGeometry(geometry, 15);
-          group.add(new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, opacity: 0.12, transparent: true })));
+          group.add(new THREE.Mesh(geoFront, new THREE.MeshPhongMaterial({
+            color: baseColor, shininess: 60, side: THREE.FrontSide, depthWrite: true,
+          })));
         }
+
+        // Subtle edge lines
+        const edgeGeo = new THREE.BufferGeometry();
+        edgeGeo.setAttribute('position', new THREE.BufferAttribute(positions.slice(), 3));
+        if (indices) edgeGeo.setIndex(new THREE.BufferAttribute(indices.slice(), 1));
+        const edges = new THREE.EdgesGeometry(edgeGeo, 20);
+        group.add(new THREE.LineSegments(edges, new THREE.LineBasicMaterial({
+          color: 0x222222, opacity: 0.3, transparent: true,
+        })));
       });
 
       scene.add(group);
 
+      // Fit camera
       const box = new THREE.Box3().setFromObject(group);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
       const maxDim = Math.max(size.x, size.y, size.z);
-      const cameraDistance = Math.abs(maxDim / Math.tan(camera.fov * Math.PI / 360)) * 1.5;
-
-      camera.position.set(center.x + cameraDistance * 0.5, center.y + cameraDistance * 0.4, center.z + cameraDistance);
+      const dist = Math.abs(maxDim / Math.tan(camera.fov * Math.PI / 360)) * 1.6;
+      camera.position.set(center.x + dist * 0.5, center.y + dist * 0.4, center.z + dist);
+      camera.userData.initialPosition = camera.position.clone();
+      camera.userData.initialTarget = center.clone();
       controls.target.copy(center);
       controls.update();
 
-      camera.userData.initialPosition = camera.position.clone();
-      camera.userData.initialTarget = center.clone();
-
       setLoading(false);
     } catch (err) {
-      console.error('Error loading STEP file:', err);
+      console.error('Error loading STEP:', err);
       setError(err.message);
       setLoading(false);
     }
@@ -191,9 +189,6 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
       if (cam.userData.initialPosition) {
         cam.position.copy(cam.userData.initialPosition);
         controlsRef.current.target.copy(cam.userData.initialTarget);
-      } else {
-        cam.position.set(0, 0, 500);
-        controlsRef.current.target.set(0, 0, 0);
       }
       controlsRef.current.update();
     }
@@ -210,8 +205,7 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
           </div>
           <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: '#999', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
             onMouseEnter={e => e.currentTarget.style.background = '#f0f0f0'}
-            onMouseLeave={e => e.currentTarget.style.background = 'none'}
-          >✕</button>
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}>✕</button>
         </div>
 
         <div style={{ padding: '0.75rem 1.5rem', background: '#fafafa', borderBottom: '1px solid #e0e0e0', display: 'flex', gap: '1rem', alignItems: 'center' }}>
