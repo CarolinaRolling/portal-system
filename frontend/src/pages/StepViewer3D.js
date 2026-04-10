@@ -5,8 +5,6 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 // Build a single mesh with vertex colors to avoid z-fighting entirely
 function buildColoredMesh(mesh, meshColor, palette, meshIdx) {
   const positions = new Float32Array(mesh.attributes.position.array);
-  const normals = mesh.attributes.normal
-    ? new Float32Array(mesh.attributes.normal.array) : null;
   const indices = mesh.index ? new Uint32Array(mesh.index.array) : null;
   const triCount = indices ? indices.length / 3 : positions.length / 9;
 
@@ -28,7 +26,6 @@ function buildColoredMesh(mesh, meshColor, palette, meshIdx) {
   // Build expanded (non-indexed) buffers so each triangle vertex gets its own color
   const vertCount = triCount * 3;
   const newPos   = new Float32Array(vertCount * 3);
-  const newNorm  = new Float32Array(vertCount * 3);
   const newColor = new Float32Array(vertCount * 3);
 
   for (let t = 0; t < triCount; t++) {
@@ -39,11 +36,6 @@ function buildColoredMesh(mesh, meshColor, palette, meshIdx) {
       newPos[dstIdx * 3]     = positions[srcIdx * 3];
       newPos[dstIdx * 3 + 1] = positions[srcIdx * 3 + 1];
       newPos[dstIdx * 3 + 2] = positions[srcIdx * 3 + 2];
-      if (normals) {
-        newNorm[dstIdx * 3]     = normals[srcIdx * 3];
-        newNorm[dstIdx * 3 + 1] = normals[srcIdx * 3 + 1];
-        newNorm[dstIdx * 3 + 2] = normals[srcIdx * 3 + 2];
-      }
       newColor[dstIdx * 3]     = c.r;
       newColor[dstIdx * 3 + 1] = c.g;
       newColor[dstIdx * 3 + 2] = c.b;
@@ -53,11 +45,8 @@ function buildColoredMesh(mesh, meshColor, palette, meshIdx) {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(newPos, 3));
   geo.setAttribute('color',    new THREE.BufferAttribute(newColor, 3));
-  if (normals) {
-    geo.setAttribute('normal', new THREE.BufferAttribute(newNorm, 3));
-  } else {
-    geo.computeVertexNormals();
-  }
+  // Always recompute — STEP file normals are often inconsistent across faces
+  geo.computeVertexNormals();
 
   return geo;
 }
