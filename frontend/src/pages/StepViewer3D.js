@@ -133,7 +133,7 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
                 ? new THREE.Color(mesh.color[0], mesh.color[1], mesh.color[2])
                 : new THREE.Color(colors[idx % colors.length]);
 
-            const mat = new THREE.MeshPhongMaterial({ color: faceColor, shininess: 80, specular: new THREE.Color(0x222222), side: THREE.DoubleSide });
+            const mat = new THREE.MeshPhongMaterial({ color: faceColor, shininess: 80, specular: new THREE.Color(0x222222), side: THREE.FrontSide });
             group.add(new THREE.Mesh(faceGeo, mat));
           });
 
@@ -156,7 +156,7 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
             ? new THREE.Color(mesh.color[0], mesh.color[1], mesh.color[2])
             : new THREE.Color(colors[idx % colors.length]);
 
-          const mat = new THREE.MeshPhongMaterial({ color, shininess: 80, specular: new THREE.Color(0x222222), side: THREE.DoubleSide });
+          const mat = new THREE.MeshPhongMaterial({ color, shininess: 80, specular: new THREE.Color(0x222222), side: THREE.FrontSide });
           group.add(new THREE.Mesh(geometry, mat));
 
           const edges = new THREE.EdgesGeometry(geometry, 15);
