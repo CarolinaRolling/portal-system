@@ -123,9 +123,8 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
 
             const faceGeo = new THREE.BufferGeometry();
             faceGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            if (normals) faceGeo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
             faceGeo.setIndex(new THREE.BufferAttribute(faceIndices, 1));
-            if (!normals) faceGeo.computeVertexNormals();
+            faceGeo.computeVertexNormals();
 
             const faceColor = face.color
               ? new THREE.Color(face.color[0], face.color[1], face.color[2])
@@ -133,7 +132,7 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
                 ? new THREE.Color(mesh.color[0], mesh.color[1], mesh.color[2])
                 : new THREE.Color(colors[idx % colors.length]);
 
-            const mat = new THREE.MeshPhongMaterial({ color: faceColor, shininess: 80, specular: new THREE.Color(0x222222), side: THREE.FrontSide });
+            const mat = new THREE.MeshPhongMaterial({ color: faceColor, shininess: 80, specular: new THREE.Color(0x222222), side: THREE.DoubleSide, depthWrite: true, transparent: false });
             group.add(new THREE.Mesh(faceGeo, mat));
           });
 
@@ -148,15 +147,14 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
           // Single color for whole mesh
           const geometry = new THREE.BufferGeometry();
           geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-          if (normals) geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
           if (indices) geometry.setIndex(new THREE.BufferAttribute(indices, 1));
-          if (!normals) geometry.computeVertexNormals();
+          geometry.computeVertexNormals();
 
           const color = mesh.color
             ? new THREE.Color(mesh.color[0], mesh.color[1], mesh.color[2])
             : new THREE.Color(colors[idx % colors.length]);
 
-          const mat = new THREE.MeshPhongMaterial({ color, shininess: 80, specular: new THREE.Color(0x222222), side: THREE.FrontSide });
+          const mat = new THREE.MeshPhongMaterial({ color, shininess: 80, specular: new THREE.Color(0x222222), side: THREE.DoubleSide, depthWrite: true, transparent: false });
           group.add(new THREE.Mesh(geometry, mat));
 
           const edges = new THREE.EdgesGeometry(geometry, 15);
