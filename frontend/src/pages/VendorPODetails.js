@@ -53,8 +53,8 @@ const VendorPODetails = ({ user }) => {
         
         data.parts.forEach((part, index) => {
           console.log(`\n  Part #${index + 1}:`);
-          console.log('    Part Number:', part.partNumber);
-          console.log('    Part ID:', part.id);
+          console.log('    ALL PART KEYS:', Object.keys(part));
+          console.log('    FULL PART OBJECT:', JSON.stringify(part, null, 2));
           
           if (part.files && Array.isArray(part.files)) {
             console.log('    Files found:', part.files.length);

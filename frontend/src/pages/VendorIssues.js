@@ -46,7 +46,9 @@ const VendorIssues = () => {
       const data = await getIssues();
       
       console.log('Fetched issues:', data);
-      setIssues(data || []);
+      // API may return {data: [...]} or just [...]
+      const issueList = Array.isArray(data) ? data : (Array.isArray(data?.data) ? data.data : []);
+      setIssues(issueList);
     } catch (err) {
       console.error('Error fetching issues:', err);
       setError('Failed to load issues.');
