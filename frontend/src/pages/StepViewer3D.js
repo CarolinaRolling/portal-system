@@ -264,25 +264,67 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
     const cam = cameraRef.current;
     if (cam && cam.userData.initialPosition) {
       cam.position.copy(cam.userData.initialPosition);
+      cam.lookAt(0, 0, 0);
       const g = controlsRef.current && controlsRef.current.groupRef && controlsRef.current.groupRef.current;
       if (g) g.quaternion.set(0, 0, 0, 1);
     }
   };
 
+  const snapToView = (view) => {
+    const cam = cameraRef.current;
+    const g = controlsRef.current && controlsRef.current.groupRef && controlsRef.current.groupRef.current;
+    if (!cam || !g) return;
+    const d = cam.userData.initialPosition ? cam.userData.initialPosition.length() : 500;
+    g.quaternion.set(0, 0, 0, 1); // reset object rotation
+    const positions = {
+      front:  [0, 0, d],
+      back:   [0, 0, -d],
+      top:    [0, d, 0],
+      bottom: [0, -d, 0],
+      left:   [-d, 0, 0],
+      right:  [d, 0, 0],
+    };
+    const [x, y, z] = positions[view];
+    cam.position.set(x, y, z);
+    cam.lookAt(0, 0, 0);
+  };
+
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(0px, 2vw, 1.5rem)' }}>
       <div style={{ background: 'white', borderRadius: '12px', width: '100%', maxWidth: '1200px', height: '100%', maxHeight: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 25px 70px rgba(0,0,0,0.4)' }}>
-        <div style={{ padding: 'clamp(0.5rem, 2vw, 1rem) clamp(0.75rem, 3vw, 1.5rem)', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fafafa', gap: '0.75rem' }}>
-          <p style={{ margin: 0, fontWeight: '600', fontSize: 'clamp(0.85rem, 2.5vw, 1rem)', color: '#333', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fileName}</p>
-          <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center', flexShrink: 0 }}>
-            <button onClick={handleResetView} style={{ padding: '0.4rem 0.85rem', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.82rem', whiteSpace: 'nowrap' }}>
-              🔄 Reset
-            </button>
-            <button onClick={onClose}
-              style={{ background: 'none', border: 'none', fontSize: '1.6rem', cursor: 'pointer', color: '#999', width: '34px', height: '34px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
-              onMouseEnter={e => e.currentTarget.style.background = '#f0f0f0'}
-              onMouseLeave={e => e.currentTarget.style.background = 'none'}>✕</button>
-          </div>
+        {/* Header row - filename + close */}
+        <div style={{ padding: '0.6rem 1rem', borderBottom: '1px solid #e8e8e8', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fafafa', gap: '0.5rem' }}>
+          <p style={{ margin: 0, fontWeight: '600', fontSize: 'clamp(0.8rem, 2.5vw, 0.95rem)', color: '#333', flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fileName}</p>
+          <button onClick={onClose}
+            style={{ background: 'none', border: 'none', fontSize: '1.5rem', cursor: 'pointer', color: '#999', width: '32px', height: '32px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%', flexShrink: 0 }}
+            onMouseEnter={e => e.currentTarget.style.background = '#f0f0f0'}
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}>✕</button>
+        </div>
+
+        {/* View preset toolbar */}
+        <div style={{ padding: '0.4rem 0.75rem', background: '#f5f5f5', borderBottom: '1px solid #e8e8e8', display: 'flex', gap: '0.35rem', alignItems: 'center', flexWrap: 'wrap' }}>
+          {[
+            { label: '⟳ Reset', action: handleResetView, gold: true },
+            { label: 'Front',  action: () => snapToView('front') },
+            { label: 'Back',   action: () => snapToView('back') },
+            { label: 'Top',    action: () => snapToView('top') },
+            { label: 'Bottom', action: () => snapToView('bottom') },
+            { label: 'Left',   action: () => snapToView('left') },
+            { label: 'Right',  action: () => snapToView('right') },
+          ].map(({ label, action, gold }) => (
+            <button key={label} onClick={action} style={{
+              padding: '0.3rem 0.65rem',
+              background: gold ? '#f59e0b' : 'white',
+              color: gold ? 'white' : '#444',
+              border: '1px solid ' + (gold ? '#f59e0b' : '#ddd'),
+              borderRadius: '5px',
+              cursor: 'pointer',
+              fontWeight: '600',
+              fontSize: '0.78rem',
+              whiteSpace: 'nowrap',
+            }}>{label}</button>
+          ))}
+          <span style={{ color: '#aaa', fontSize: '0.75rem', marginLeft: '0.25rem' }}>Drag to rotate • Scroll to zoom • Right-drag to pan</span>
         </div>
         <div style={{ flex: 1, position: 'relative' }}>
           {loading && (
