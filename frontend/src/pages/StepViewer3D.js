@@ -240,13 +240,17 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
       scene.add(group);
       if (controlsRef.current && controlsRef.current.groupRef) controlsRef.current.groupRef.current = group;
 
+      // Center group at origin so rotation always pivots around the part
       const box = new THREE.Box3().setFromObject(group);
       const center = box.getCenter(new THREE.Vector3());
+      group.position.sub(center);
+
+      // Fit camera straight on
       const size = box.getSize(new THREE.Vector3());
-      const dist = Math.abs(Math.max(size.x, size.y, size.z) / Math.tan(camera.fov * Math.PI / 360)) * 1.6;
-      camera.position.set(center.x + dist * 0.5, center.y + dist * 0.4, center.z + dist);
+      const dist = Math.abs(Math.max(size.x, size.y, size.z) / Math.tan(camera.fov * Math.PI / 360)) * 1.8;
+      camera.position.set(0, 0, dist);
+      camera.lookAt(0, 0, 0);
       camera.userData.initialPosition = camera.position.clone();
-      camera.userData.initialTarget = center.clone();
 
       setLoading(false);
     } catch (err) {
