@@ -46,7 +46,6 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
     dir2.position.set(-2, -1, -1);
     scene.add(dir2);
     scene.add(new THREE.HemisphereLight(0xddeeff, 0x222233, 0.3));
-    scene.add(new THREE.GridHelper(2000, 40, 0xaaaaaa, 0xdddddd));
 
     loadStepFile(fileUrl, scene, camera, controls);
 
