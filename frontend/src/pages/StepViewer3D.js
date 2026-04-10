@@ -5,6 +5,7 @@ import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
   const containerRef = useRef(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMsg, setLoadingMsg] = useState('Initializing viewer...');
   const [error, setError] = useState(null);
   const sceneRef = useRef(null);
   const rendererRef = useRef(null);
@@ -15,66 +16,40 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
   useEffect(() => {
     if (!containerRef.current) return;
 
-    console.log('ð¨ INITIALIZING 3D VIEWER');
-    console.log('File URL:', fileUrl);
-    console.log('File name:', fileName);
-
-    // Setup scene
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0xf0f0f0);
+    scene.background = new THREE.Color(0xf0f4f8);
     sceneRef.current = scene;
 
-    // Setup camera
-    const camera = new THREE.PerspectiveCamera(
-      75,
-      containerRef.current.clientWidth / containerRef.current.clientHeight,
-      0.1,
-      10000
-    );
+    const camera = new THREE.PerspectiveCamera(45, containerRef.current.clientWidth / containerRef.current.clientHeight, 0.01, 100000);
     camera.position.set(0, 0, 500);
     cameraRef.current = camera;
 
-    // Setup renderer
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
     renderer.setPixelRatio(window.devicePixelRatio);
+    renderer.shadowMap.enabled = true;
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    // Setup controls
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.screenSpacePanning = false;
-    controls.minDistance = 10;
-    controls.maxDistance = 5000;
+    controls.minDistance = 0.1;
+    controls.maxDistance = 50000;
     controlsRef.current = controls;
 
-    // Add lights
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    scene.add(ambientLight);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.5));
+    const dir1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    dir1.position.set(1, 2, 3);
+    scene.add(dir1);
+    const dir2 = new THREE.DirectionalLight(0xffffff, 0.4);
+    dir2.position.set(-2, -1, -1);
+    scene.add(dir2);
+    scene.add(new THREE.HemisphereLight(0xddeeff, 0x222233, 0.3));
+    scene.add(new THREE.GridHelper(2000, 40, 0xaaaaaa, 0xdddddd));
 
-    const directionalLight1 = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight1.position.set(1, 1, 1);
-    scene.add(directionalLight1);
-
-    const directionalLight2 = new THREE.DirectionalLight(0xffffff, 0.4);
-    directionalLight2.position.set(-1, -1, -1);
-    scene.add(directionalLight2);
-
-    // Add grid
-    const gridHelper = new THREE.GridHelper(1000, 20, 0x888888, 0xcccccc);
-    scene.add(gridHelper);
-
-    // Add axes helper
-    const axesHelper = new THREE.AxesHelper(200);
-    scene.add(axesHelper);
-
-    // Load STEP file (simplified - shows placeholder cube)
-    // Note: Full STEP parsing requires OpenCascade.js or similar
     loadStepFile(fileUrl, scene, camera, controls);
 
-    // Animation loop
     const animate = () => {
       animationFrameRef.current = requestAnimationFrame(animate);
       controls.update();
@@ -82,7 +57,6 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
     };
     animate();
 
-    // Handle resize
     const handleResize = () => {
       if (!containerRef.current) return;
       camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
@@ -91,15 +65,10 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
     };
     window.addEventListener('resize', handleResize);
 
-    // Cleanup
     return () => {
       window.removeEventListener('resize', handleResize);
-      if (animationFrameRef.current) {
-        cancelAnimationFrame(animationFrameRef.current);
-      }
-      if (containerRef.current && renderer.domElement) {
-        containerRef.current.removeChild(renderer.domElement);
-      }
+      if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
+      if (containerRef.current && renderer.domElement) containerRef.current.removeChild(renderer.domElement);
       renderer.dispose();
       controls.dispose();
     };
@@ -108,235 +77,134 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
   const loadStepFile = async (url, scene, camera, controls) => {
     try {
       setLoading(true);
-      console.log('ð¥ Loading STEP file from:', url);
+      setLoadingMsg('Downloading STEP file...');
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch file: ' + response.statusText);
+      const arrayBuffer = await response.arrayBuffer();
+      const fileBuffer = new Uint8Array(arrayBuffer);
 
-      // For STEP files, we'll show a message and create a placeholder
-      // In production, you'd use OpenCascade.js or a STEP parser
-      
-      // Create a placeholder geometry for demonstration
-      const geometry = new THREE.BoxGeometry(100, 100, 100);
-      const material = new THREE.MeshPhongMaterial({ 
-        color: 0x4a90e2,
-        shininess: 100,
-        specular: 0x111111
+      setLoadingMsg('Loading STEP parser (first load may take a moment)...');
+      let initOpenCascade;
+      try {
+        const mod = await import('occt-import-js');
+        initOpenCascade = mod.default;
+      } catch (e) {
+        throw new Error('STEP parser library not available. Please ensure occt-import-js is installed.');
+      }
+
+      setLoadingMsg('Parsing STEP geometry...');
+      const occt = await initOpenCascade();
+      const result = occt.ReadStepFile(fileBuffer, null);
+
+      if (!result || !result.meshes || result.meshes.length === 0) {
+        throw new Error('No geometry found in STEP file.');
+      }
+
+      setLoadingMsg('Building 3D model...');
+      const colors = [0x4a90e2, 0x7ecba1, 0xf59e0b, 0xe05c5c, 0x9b59b6, 0x1abc9c];
+      const group = new THREE.Group();
+
+      result.meshes.forEach((mesh, idx) => {
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(mesh.attributes.position.array), 3));
+        if (mesh.attributes.normal) {
+          geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(mesh.attributes.normal.array), 3));
+        }
+        if (mesh.index) {
+          geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(mesh.index.array), 1));
+        }
+        if (!mesh.attributes.normal) geometry.computeVertexNormals();
+
+        const color = mesh.color
+          ? new THREE.Color(mesh.color[0], mesh.color[1], mesh.color[2])
+          : new THREE.Color(colors[idx % colors.length]);
+
+        const mat = new THREE.MeshPhongMaterial({ color, shininess: 80, specular: new THREE.Color(0x333333), side: THREE.DoubleSide });
+        group.add(new THREE.Mesh(geometry, mat));
+
+        const edges = new THREE.EdgesGeometry(geometry, 15);
+        group.add(new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, opacity: 0.15, transparent: true })));
       });
-      const mesh = new THREE.Mesh(geometry, material);
-      scene.add(mesh);
 
-      // Add wireframe overlay
-      const wireframe = new THREE.WireframeGeometry(geometry);
-      const line = new THREE.LineSegments(wireframe);
-      line.material.color.setHex(0x000000);
-      line.material.opacity = 0.3;
-      line.material.transparent = true;
-      scene.add(line);
+      scene.add(group);
 
-      // Fit camera to object
-      const box = new THREE.Box3().setFromObject(mesh);
+      const box = new THREE.Box3().setFromObject(group);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
-      
       const maxDim = Math.max(size.x, size.y, size.z);
-      const fov = camera.fov * (Math.PI / 180);
-      let cameraZ = Math.abs(maxDim / 2 / Math.tan(fov / 2));
-      cameraZ *= 2; // Add some padding
-      
-      camera.position.set(center.x, center.y, center.z + cameraZ);
+      const cameraDistance = Math.abs(maxDim / Math.tan(camera.fov * Math.PI / 360)) * 1.5;
+
+      camera.position.set(center.x + cameraDistance * 0.5, center.y + cameraDistance * 0.4, center.z + cameraDistance);
       controls.target.copy(center);
       controls.update();
 
-      setLoading(false);
-      setError('STEP file preview - Full parsing requires additional libraries');
-      
-      console.log('â 3D view ready (placeholder)');
+      camera.userData.initialPosition = camera.position.clone();
+      camera.userData.initialTarget = center.clone();
 
+      setLoading(false);
     } catch (err) {
-      console.error('â Error loading STEP file:', err);
-      setError('Failed to load 3D model: ' + err.message);
+      console.error('Error loading STEP file:', err);
+      setError(err.message);
       setLoading(false);
     }
   };
 
   const handleResetView = () => {
     if (cameraRef.current && controlsRef.current) {
-      cameraRef.current.position.set(0, 0, 500);
-      controlsRef.current.target.set(0, 0, 0);
+      const cam = cameraRef.current;
+      if (cam.userData.initialPosition) {
+        cam.position.copy(cam.userData.initialPosition);
+        controlsRef.current.target.copy(cam.userData.initialTarget);
+      } else {
+        cam.position.set(0, 0, 500);
+        controlsRef.current.target.set(0, 0, 0);
+      }
       controlsRef.current.update();
     }
   };
 
   return (
-    <div style={{
-      position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(0,0,0,0.8)',
-      zIndex: 10000,
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      padding: '2rem'
-    }}>
-      <div style={{
-        background: 'white',
-        borderRadius: '12px',
-        width: '100%',
-        maxWidth: '1200px',
-        height: '90vh',
-        display: 'flex',
-        flexDirection: 'column',
-        overflow: 'hidden',
-        boxShadow: '0 20px 60px rgba(0,0,0,0.3)'
-      }}>
-        {/* Header */}
-        <div style={{
-          padding: '1.5rem',
-          borderBottom: '1px solid #e0e0e0',
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          background: '#f9f9f9'
-        }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
+      <div style={{ background: 'white', borderRadius: '12px', width: '100%', maxWidth: '1200px', height: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 25px 70px rgba(0,0,0,0.4)' }}>
+
+        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fafafa' }}>
           <div>
-            <h2 style={{ margin: '0 0 0.5rem 0', fontSize: '1.5rem' }}>
-              ð¨ 3D Viewer
-            </h2>
-            <p style={{ margin: 0, color: '#666', fontSize: '0.9rem' }}>
-              {fileName}
-            </p>
+            <h2 style={{ margin: '0 0 0.25rem 0', fontSize: '1.4rem' }}>🎨 3D Viewer</h2>
+            <p style={{ margin: 0, color: '#888', fontSize: '0.85rem' }}>{fileName}</p>
           </div>
-          <button
-            onClick={onClose}
-            style={{
-              background: 'none',
-              border: 'none',
-              fontSize: '2rem',
-              cursor: 'pointer',
-              color: '#666',
-              padding: 0,
-              width: '40px',
-              height: '40px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '50%',
-              transition: 'background 0.2s'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.background = '#f0f0f0'}
-            onMouseLeave={(e) => e.currentTarget.style.background = 'none'}
-          >
-            â
-          </button>
+          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: '#999', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
+            onMouseEnter={e => e.currentTarget.style.background = '#f0f0f0'}
+            onMouseLeave={e => e.currentTarget.style.background = 'none'}
+          >✕</button>
         </div>
 
-        {/* Controls */}
-        <div style={{
-          padding: '1rem 1.5rem',
-          background: '#f9f9f9',
-          borderBottom: '1px solid #e0e0e0',
-          display: 'flex',
-          gap: '1rem',
-          alignItems: 'center'
-        }}>
-          <button
-            onClick={handleResetView}
-            style={{
-              padding: '0.5rem 1rem',
-              background: '#f59e0b',
-              color: 'white',
-              border: 'none',
-              borderRadius: '6px',
-              cursor: 'pointer',
-              fontWeight: '600',
-              fontSize: '0.9rem'
-            }}
-          >
-            ð Reset View
+        <div style={{ padding: '0.75rem 1.5rem', background: '#fafafa', borderBottom: '1px solid #e0e0e0', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          <button onClick={handleResetView} style={{ padding: '0.4rem 1rem', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}>
+            🔄 Reset View
           </button>
-          <div style={{ color: '#666', fontSize: '0.85rem' }}>
-            <strong>Controls:</strong> Left-click + drag to rotate â¢ Right-click + drag to pan â¢ Scroll to zoom
+          <div style={{ color: '#777', fontSize: '0.82rem' }}>
+            <strong>Controls:</strong> Left-click + drag to rotate &nbsp;•&nbsp; Right-click + drag to pan &nbsp;•&nbsp; Scroll to zoom
           </div>
         </div>
 
-        {/* 3D Canvas Container */}
         <div style={{ flex: 1, position: 'relative' }}>
           {loading && (
-            <div style={{
-              position: 'absolute',
-              top: 0,
-              left: 0,
-              right: 0,
-              bottom: 0,
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              background: 'rgba(255,255,255,0.9)',
-              zIndex: 10
-            }}>
+            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.95)', zIndex: 10 }}>
               <div style={{ textAlign: 'center' }}>
-                <div className="spinner" style={{
-                  border: '4px solid #f3f3f3',
-                  borderTop: '4px solid #f59e0b',
-                  borderRadius: '50%',
-                  width: '50px',
-                  height: '50px',
-                  animation: 'spin 1s linear infinite',
-                  margin: '0 auto 1rem'
-                }}></div>
-                <p style={{ color: '#666' }}>Loading 3D model...</p>
+                <div style={{ border: '4px solid #f0f0f0', borderTop: '4px solid #f59e0b', borderRadius: '50%', width: '50px', height: '50px', animation: 'spin 1s linear infinite', margin: '0 auto 1rem' }} />
+                <p style={{ color: '#555', fontWeight: '500' }}>{loadingMsg}</p>
               </div>
             </div>
           )}
-
-          {error && (
-            <div style={{
-              position: 'absolute',
-              top: '1rem',
-              left: '50%',
-              transform: 'translateX(-50%)',
-              background: '#fff3cd',
-              border: '1px solid #ffc107',
-              color: '#856404',
-              padding: '0.75rem 1rem',
-              borderRadius: '6px',
-              zIndex: 10,
-              maxWidth: '80%',
-              fontSize: '0.9rem'
-            }}>
-              â ï¸ {error}
+          {error && !loading && (
+            <div style={{ position: 'absolute', top: '1rem', left: '50%', transform: 'translateX(-50%)', background: '#fff3cd', border: '1px solid #ffc107', color: '#856404', padding: '0.75rem 1.25rem', borderRadius: '8px', zIndex: 10, maxWidth: '80%', fontSize: '0.9rem', textAlign: 'center' }}>
+              ⚠️ {error}
             </div>
           )}
-
-          <div 
-            ref={containerRef} 
-            style={{ 
-              width: '100%', 
-              height: '100%',
-              background: '#f0f0f0'
-            }} 
-          />
-        </div>
-
-        {/* Footer */}
-        <div style={{
-          padding: '1rem 1.5rem',
-          borderTop: '1px solid #e0e0e0',
-          background: '#f9f9f9',
-          fontSize: '0.85rem',
-          color: '#666'
-        }}>
-          <strong>Note:</strong> This is a preview viewer. Full STEP file parsing requires additional libraries. Currently showing placeholder geometry.
+          <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
         </div>
       </div>
-
-      <style>{`
-        @keyframes spin {
-          0% { transform: rotate(0deg); }
-          100% { transform: rotate(360deg); }
-        }
-      `}</style>
+      <style>{`@keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }`}</style>
     </div>
   );
 };

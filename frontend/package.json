@@ -11,7 +11,8 @@
     "axios": "^1.6.0",
     "three": "0.160.0",
     "dxf-parser": "latest",
-    "web-vitals": "^2.1.4"
+    "web-vitals": "^2.1.4",
+    "occt-import-js": "^0.0.28"
   },
   "devDependencies": {
     "react-scripts": "5.0.1"
@@ -20,7 +21,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "postinstall": "node -e \"const fs=require('fs');const src='node_modules/occt-import-js/dist/occt-import-js.wasm';const dst='public/occt-import-js.wasm';try{fs.copyFileSync(src,dst);console.log('WASM copied')}catch(e){console.log('WASM copy skipped:',e.message)}\""
   },
   "eslintConfig": {
     "extends": [
