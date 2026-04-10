@@ -289,6 +289,17 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
     cam.lookAt(0, 0, 0);
   };
 
+  const rotate90 = (direction) => {
+    const g = controlsRef.current && controlsRef.current.groupRef && controlsRef.current.groupRef.current;
+    const cam = cameraRef.current;
+    if (!g || !cam) return;
+    // Rotate around the camera's current "up" axis relative to the view
+    const axis = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion);
+    const angle = direction === 'cw' ? -Math.PI / 2 : Math.PI / 2;
+    const q = new THREE.Quaternion().setFromAxisAngle(axis, angle);
+    g.quaternion.premultiply(q);
+  };
+
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(0px, 2vw, 1.5rem)' }}>
       <div style={{ background: 'white', borderRadius: '12px', width: '100%', maxWidth: '1200px', height: '100%', maxHeight: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 25px 70px rgba(0,0,0,0.4)' }}>
@@ -324,6 +335,17 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
               whiteSpace: 'nowrap',
             }}>{label}</button>
           ))}
+          <div style={{ width: '1px', background: '#ddd', height: '20px', margin: '0 0.1rem' }} />
+          <button onClick={() => rotate90('ccw')} title="Rotate 90° counter-clockwise" style={{
+            padding: '0.3rem 0.65rem', background: 'white', color: '#444',
+            border: '1px solid #ddd', borderRadius: '5px', cursor: 'pointer',
+            fontWeight: '700', fontSize: '1rem', lineHeight: 1,
+          }}>↺</button>
+          <button onClick={() => rotate90('cw')} title="Rotate 90° clockwise" style={{
+            padding: '0.3rem 0.65rem', background: 'white', color: '#444',
+            border: '1px solid #ddd', borderRadius: '5px', cursor: 'pointer',
+            fontWeight: '700', fontSize: '1rem', lineHeight: 1,
+          }}>↻</button>
           <span style={{ color: '#aaa', fontSize: '0.75rem', marginLeft: '0.25rem' }}>Drag to rotate • Scroll to zoom • Right-drag to pan</span>
         </div>
         <div style={{ flex: 1, position: 'relative' }}>
