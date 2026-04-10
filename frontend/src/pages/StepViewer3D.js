@@ -121,17 +121,13 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
         camera.position.y += dy * panSpeed;
       } else {
         // Free arcball rotation — rotate the group, no stops ever
-        const rotY = new THREE.Quaternion().setFromAxisAngle(
-          new THREE.Vector3(0, 1, 0).applyQuaternion(groupRef.current.quaternion.clone().invert()),
-          dx * 0.01
-        );
-        const rotX = new THREE.Quaternion().setFromAxisAngle(
-          new THREE.Vector3(1, 0, 0).applyQuaternion(groupRef.current.quaternion.clone().invert()),
-          dy * 0.01
-        );
-        groupRef.current.quaternion.premultiply(
-          new THREE.Quaternion().multiplyQuaternions(rotY, rotX)
-        );
+        // Always rotate around camera's screen-space axes so drag direction
+        // stays consistent regardless of how the group has been rotated
+        const camRight = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+        const camUp    = new THREE.Vector3(0, 1, 0).applyQuaternion(camera.quaternion);
+        const rotY = new THREE.Quaternion().setFromAxisAngle(camUp,    dx * 0.01);
+        const rotX = new THREE.Quaternion().setFromAxisAngle(camRight, dy * 0.01);
+        groupRef.current.quaternion.premultiply(rotY).premultiply(rotX);
       }
       state.lastX = x; state.lastY = y;
     };
