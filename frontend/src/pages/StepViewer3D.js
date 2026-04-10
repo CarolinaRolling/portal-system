@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls';
 
 // Build a single mesh with vertex colors to avoid z-fighting entirely
 function buildColoredMesh(mesh, meshColor, palette, meshIdx) {
@@ -76,13 +76,11 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    const controls = new OrbitControls(camera, renderer.domElement);
-    controls.enableDamping = true;
-    controls.dampingFactor = 0.05;
-    controls.minPolarAngle = 0;
-    controls.maxPolarAngle = Math.PI; // full top-to-bottom, no stop
-    controls.minAzimuthAngle = -Infinity; // full 360 horizontal
-    controls.maxAzimuthAngle = Infinity;
+    const controls = new TrackballControls(camera, renderer.domElement);
+    controls.rotateSpeed = 3.0;
+    controls.zoomSpeed = 1.2;
+    controls.panSpeed = 0.8;
+    controls.dynamicDampingFactor = 0.15;
     controlsRef.current = controls;
 
     // No lights needed - MeshBasicMaterial renders pure vertex colors
