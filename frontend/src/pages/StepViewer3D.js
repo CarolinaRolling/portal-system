@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
-import { TrackballControls } from 'three/examples/jsm/controls/TrackballControls';
+
 
 // Build a single mesh with vertex colors to avoid z-fighting entirely
 function buildColoredMesh(mesh, meshColor, palette, meshIdx) {
@@ -76,12 +76,83 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
-    const controls = new TrackballControls(camera, renderer.domElement);
-    controls.rotateSpeed = 3.0;
-    controls.zoomSpeed = 1.2;
-    controls.panSpeed = 0.8;
-    controls.dynamicDampingFactor = 0.15;
-    controlsRef.current = controls;
+    // Custom arcball — zero stops, works on mouse and touch
+    const state = { dragging: false, panning: false, lastX: 0, lastY: 0, lastDist: 0 };
+    const groupRef = { current: null }; // set after model loads
+    controlsRef.current = { target: new THREE.Vector3(), groupRef, update: () => {} };
+
+    const getXY = (e) => {
+      if (e.touches && e.touches.length > 0) return { x: e.touches[0].clientX, y: e.touches[0].clientY };
+      return { x: e.clientX, y: e.clientY };
+    };
+
+    const onDown = (e) => {
+      const { x, y } = getXY(e);
+      state.dragging = true;
+      state.panning = e.button === 2 || (e.touches && e.touches.length === 2);
+      state.lastX = x; state.lastY = y;
+      if (e.touches && e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        state.lastDist = Math.sqrt(dx*dx + dy*dy);
+      }
+    };
+
+    const onMove = (e) => {
+      if (!state.dragging || !groupRef.current) return;
+      e.preventDefault();
+      const { x, y } = getXY(e);
+      const dx = x - state.lastX;
+      const dy = y - state.lastY;
+
+      if (e.touches && e.touches.length === 2) {
+        // Pinch zoom
+        const dist = Math.sqrt(
+          Math.pow(e.touches[0].clientX - e.touches[1].clientX, 2) +
+          Math.pow(e.touches[0].clientY - e.touches[1].clientY, 2)
+        );
+        const delta = (state.lastDist - dist) * 0.5;
+        camera.position.multiplyScalar(1 + delta * 0.01);
+        state.lastDist = dist;
+      } else if (state.panning) {
+        // Pan — move camera sideways
+        const panSpeed = camera.position.length() * 0.001;
+        camera.position.x -= dx * panSpeed;
+        camera.position.y += dy * panSpeed;
+      } else {
+        // Free arcball rotation — rotate the group, no stops ever
+        const rotY = new THREE.Quaternion().setFromAxisAngle(
+          new THREE.Vector3(0, 1, 0).applyQuaternion(groupRef.current.quaternion.clone().invert()),
+          dx * 0.01
+        );
+        const rotX = new THREE.Quaternion().setFromAxisAngle(
+          new THREE.Vector3(1, 0, 0).applyQuaternion(groupRef.current.quaternion.clone().invert()),
+          dy * 0.01
+        );
+        groupRef.current.quaternion.premultiply(
+          new THREE.Quaternion().multiplyQuaternions(rotY, rotX)
+        );
+      }
+      state.lastX = x; state.lastY = y;
+    };
+
+    const onUp = () => { state.dragging = false; };
+
+    const onWheel = (e) => {
+      e.preventDefault();
+      camera.position.multiplyScalar(1 + e.deltaY * 0.001);
+    };
+
+    const onContext = (e) => { e.preventDefault(); state.dragging = true; state.panning = true; state.lastX = e.clientX; state.lastY = e.clientY; };
+
+    renderer.domElement.addEventListener('mousedown',   onDown);
+    renderer.domElement.addEventListener('touchstart',  onDown,  { passive: false });
+    renderer.domElement.addEventListener('mousemove',   onMove);
+    renderer.domElement.addEventListener('touchmove',   onMove,  { passive: false });
+    renderer.domElement.addEventListener('mouseup',     onUp);
+    renderer.domElement.addEventListener('touchend',    onUp);
+    renderer.domElement.addEventListener('wheel',       onWheel, { passive: false });
+    renderer.domElement.addEventListener('contextmenu', onContext);
 
     // No lights needed - MeshBasicMaterial renders pure vertex colors
 
@@ -89,7 +160,6 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
 
     const animate = () => {
       animationFrameRef.current = requestAnimationFrame(animate);
-      controls.update();
       renderer.render(scene, camera);
     };
     animate();
@@ -106,8 +176,15 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
       window.removeEventListener('resize', handleResize);
       if (animationFrameRef.current) cancelAnimationFrame(animationFrameRef.current);
       if (containerRef.current && renderer.domElement) containerRef.current.removeChild(renderer.domElement);
+      renderer.domElement.removeEventListener('mousedown',   onDown);
+      renderer.domElement.removeEventListener('touchstart',  onDown);
+      renderer.domElement.removeEventListener('mousemove',   onMove);
+      renderer.domElement.removeEventListener('touchmove',   onMove);
+      renderer.domElement.removeEventListener('mouseup',     onUp);
+      renderer.domElement.removeEventListener('touchend',    onUp);
+      renderer.domElement.removeEventListener('wheel',       onWheel);
+      renderer.domElement.removeEventListener('contextmenu', onContext);
       renderer.dispose();
-      controls.dispose();
     };
   }, [fileUrl]);
 
@@ -161,6 +238,7 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
       });
 
       scene.add(group);
+      if (controlsRef.current && controlsRef.current.groupRef) controlsRef.current.groupRef.current = group;
 
       const box = new THREE.Box3().setFromObject(group);
       const center = box.getCenter(new THREE.Vector3());
@@ -182,10 +260,10 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
 
   const handleResetView = () => {
     const cam = cameraRef.current;
-    if (cam && controlsRef.current && cam.userData.initialPosition) {
+    if (cam && cam.userData.initialPosition) {
       cam.position.copy(cam.userData.initialPosition);
-      controlsRef.current.target.copy(cam.userData.initialTarget);
-      controlsRef.current.update();
+      const g = controlsRef.current && controlsRef.current.groupRef && controlsRef.current.groupRef.current;
+      if (g) g.quaternion.set(0, 0, 0, 1);
     }
   };
 
