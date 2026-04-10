@@ -79,6 +79,10 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
+    controls.minPolarAngle = 0;
+    controls.maxPolarAngle = Math.PI; // full top-to-bottom, no stop
+    controls.minAzimuthAngle = -Infinity; // full 360 horizontal
+    controls.maxAzimuthAngle = Infinity;
     controlsRef.current = controls;
 
     // No lights needed - MeshBasicMaterial renders pure vertex colors
