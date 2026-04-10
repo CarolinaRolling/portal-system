@@ -288,20 +288,24 @@ const VendorPODetails = ({ user }) => {
         </div>
       </div>
 
-      <div style={{padding: '2rem', maxWidth: '1200px', margin: '0 auto'}}>
+      <div style={{padding: 'clamp(0.75rem, 3vw, 2rem)', maxWidth: '1200px', margin: '0 auto', boxSizing: 'border-box', width: '100%', overflowX: 'hidden'}}>
         {/* PO Information Card */}
         <div style={{
           background: 'white',
           borderRadius: '12px',
-          padding: '2rem',
+          padding: 'clamp(1rem, 3vw, 2rem)',
           boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
-          marginBottom: '2rem'
+          marginBottom: '2rem',
+          boxSizing: 'border-box',
+          overflow: 'hidden'
         }}>
           <div style={{
             display: 'flex',
             justifyContent: 'space-between',
             alignItems: 'flex-start',
-            marginBottom: '1.5rem'
+            marginBottom: '1.5rem',
+            flexWrap: 'wrap',
+            gap: '0.75rem'
           }}>
             <div>
               <h2 style={{margin: '0 0 0.5rem 0', fontSize: '1.5rem'}}>
@@ -327,7 +331,7 @@ const VendorPODetails = ({ user }) => {
 
           <div style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))',
             gap: '1.5rem',
             marginTop: '1.5rem',
             paddingTop: '1.5rem',

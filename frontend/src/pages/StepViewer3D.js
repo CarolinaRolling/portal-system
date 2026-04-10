@@ -2,6 +2,33 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
+// Extract a clean sub-geometry for a face group, with its own vertices and fresh normals
+function extractFaceGeometry(positions, allIndices, firstTri, lastTri) {
+  const startBuf = firstTri * 3;
+  const endBuf = (lastTri + 1) * 3;
+  const faceIndices = allIndices.slice(startBuf, endBuf);
+
+  // Build a compact vertex set
+  const uniqueVerts = [...new Set(faceIndices)];
+  const remap = new Map(uniqueVerts.map((v, i) => [v, i]));
+
+  const newPos = new Float32Array(uniqueVerts.length * 3);
+  uniqueVerts.forEach((v, i) => {
+    newPos[i * 3]     = positions[v * 3];
+    newPos[i * 3 + 1] = positions[v * 3 + 1];
+    newPos[i * 3 + 2] = positions[v * 3 + 2];
+  });
+
+  const newIdx = new Uint32Array(faceIndices.length);
+  faceIndices.forEach((v, i) => { newIdx[i] = remap.get(v); });
+
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(newPos, 3));
+  geo.setIndex(new THREE.BufferAttribute(newIdx, 1));
+  geo.computeVertexNormals(); // Fresh normals, no blending with other faces
+  return geo;
+}
+
 const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
   const containerRef = useRef(null);
   const [loading, setLoading] = useState(true);
@@ -91,34 +118,19 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
 
       result.meshes.forEach((mesh, meshIdx) => {
         const positions = new Float32Array(mesh.attributes.position.array);
-        const normals = mesh.attributes.normal
-          ? new Float32Array(mesh.attributes.normal.array)
-          : null;
         const indices = mesh.index ? new Uint32Array(mesh.index.array) : null;
 
         const meshColor = mesh.color
           ? new THREE.Color(mesh.color[0], mesh.color[1], mesh.color[2])
           : new THREE.Color(palette[meshIdx % palette.length]);
 
-        // Check if any faces have per-face colors (using correct 'first'/'last' keys)
         const hasFaceColors = mesh.brep_faces &&
           mesh.brep_faces.some(f => f.color !== null && f.color !== undefined);
 
         if (hasFaceColors && indices && mesh.brep_faces) {
-          // Render each face group separately with its own color
           mesh.brep_faces.forEach((face) => {
-            // face.first / face.last are TRIANGLE indices — multiply by 3 for buffer positions
             if (face.first === undefined || face.last === undefined) return;
-            const bufStart = face.first * 3;
-            const bufEnd = (face.last + 1) * 3;
-            const faceIndices = indices.slice(bufStart, bufEnd);
-            if (faceIndices.length === 0) return;
-
-            const geo = new THREE.BufferGeometry();
-            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-            if (normals) geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
-            geo.setIndex(new THREE.BufferAttribute(faceIndices, 1));
-            if (!normals) geo.computeVertexNormals();
+            const geo = extractFaceGeometry(positions, indices, face.first, face.last);
 
             const faceColor = (face.color && face.color.length >= 3)
               ? new THREE.Color(face.color[0], face.color[1], face.color[2])
@@ -126,32 +138,25 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
 
             group.add(new THREE.Mesh(geo, new THREE.MeshPhongMaterial({
               color: faceColor,
-              shininess: 70,
+              shininess: 60,
               side: THREE.DoubleSide,
-              polygonOffset: true,
-              polygonOffsetFactor: 1,
-              polygonOffsetUnits: 1,
             })));
           });
         } else {
-          // Single color for whole mesh
+          // No per-face colors — render as one mesh
           const geo = new THREE.BufferGeometry();
           geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-          if (normals) geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
           if (indices) geo.setIndex(new THREE.BufferAttribute(indices, 1));
-          if (!normals) geo.computeVertexNormals();
+          geo.computeVertexNormals();
 
           group.add(new THREE.Mesh(geo, new THREE.MeshPhongMaterial({
             color: meshColor,
-            shininess: 70,
+            shininess: 60,
             side: THREE.DoubleSide,
-            polygonOffset: true,
-            polygonOffsetFactor: 1,
-            polygonOffsetUnits: 1,
           })));
         }
 
-        // Edge lines over full mesh
+        // Edge lines
         if (indices) {
           const edgeGeo = new THREE.BufferGeometry();
           edgeGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
@@ -165,7 +170,6 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
 
       scene.add(group);
 
-      // Fit camera to model
       const box = new THREE.Box3().setFromObject(group);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
@@ -194,11 +198,11 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
   };
 
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
-      <div style={{ background: 'white', borderRadius: '12px', width: '100%', maxWidth: '1200px', height: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 25px 70px rgba(0,0,0,0.4)' }}>
-        <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fafafa' }}>
+    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(0px, 2vw, 1.5rem)' }}>
+      <div style={{ background: 'white', borderRadius: '12px', width: '100%', maxWidth: '1200px', height: '100%', maxHeight: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 25px 70px rgba(0,0,0,0.4)' }}>
+        <div style={{ padding: 'clamp(0.5rem, 2vw, 1.25rem) clamp(0.75rem, 3vw, 1.5rem)', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fafafa' }}>
           <div>
-            <h2 style={{ margin: '0 0 0.25rem 0', fontSize: '1.4rem' }}>🎨 3D Viewer</h2>
+            <h2 style={{ margin: '0 0 0.15rem 0', fontSize: 'clamp(1rem, 3vw, 1.4rem)' }}>🎨 3D Viewer</h2>
             <p style={{ margin: 0, color: '#888', fontSize: '0.85rem' }}>{fileName}</p>
           </div>
           <button onClick={onClose}
@@ -206,11 +210,11 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
             onMouseEnter={e => e.currentTarget.style.background = '#f0f0f0'}
             onMouseLeave={e => e.currentTarget.style.background = 'none'}>✕</button>
         </div>
-        <div style={{ padding: '0.75rem 1.5rem', background: '#fafafa', borderBottom: '1px solid #e0e0e0', display: 'flex', gap: '1rem', alignItems: 'center' }}>
+        <div style={{ padding: 'clamp(0.35rem, 1.5vw, 0.75rem) clamp(0.75rem, 3vw, 1.5rem)', background: '#fafafa', borderBottom: '1px solid #e0e0e0', display: 'flex', gap: '0.75rem', alignItems: 'center', flexWrap: 'wrap' }}>
           <button onClick={handleResetView} style={{ padding: '0.4rem 1rem', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}>
             🔄 Reset View
           </button>
-          <div style={{ color: '#777', fontSize: '0.82rem' }}>
+          <div style={{ color: '#777', fontSize: '0.82rem', display: 'var(--controls-display, block)' }}>
             <strong>Controls:</strong> Left-click + drag to rotate &nbsp;•&nbsp; Right-click + drag to pan &nbsp;•&nbsp; Scroll to zoom
           </div>
         </div>
@@ -231,7 +235,12 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
           <div ref={containerRef} style={{ width: '100%', height: '100%' }} />
         </div>
       </div>
-      <style>{`@keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }`}</style>
+      <style>{`
+        @keyframes spin { 0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)} }
+        @media (max-height: 500px) and (orientation: landscape) {
+          :root { --controls-display: none; }
+        }
+      `}</style>
     </div>
   );
 };
