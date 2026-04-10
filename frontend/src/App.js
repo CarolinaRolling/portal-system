@@ -10,7 +10,7 @@ import Login from './pages/Login';
 import AdminPanel from './pages/AdminPanel';
 
 // Import vendor-specific pages (create these as needed)
-// import VendorIssues from './pages/VendorIssues';
+import VendorIssues from './pages/VendorIssues';
 
 function App() {
   const [user, setUser] = useState(null);
@@ -116,7 +116,7 @@ function App() {
         />
 
         {/* Add more vendor routes as needed */}
-        {/* <Route path="/vendor/issues" element={<VendorIssues user={user} />} /> */}
+        <Route path="/vendor/issues" element={<VendorIssues user={user} />} />
 
         {/* Root redirect */}
         <Route

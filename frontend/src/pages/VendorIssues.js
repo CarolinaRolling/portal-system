@@ -21,7 +21,7 @@ const VendorIssues = () => {
   const location = useLocation();
   
   // Pre-filled data from navigation state
-  const prefillData = location.state?.prefill || location.state || {};
+  const prefillData = location.state || {};
 
   // Form state
   const [formData, setFormData] = useState({
@@ -34,7 +34,7 @@ const VendorIssues = () => {
     fetchIssues();
     
     // If navigated here to report new issue, show modal
-    if (prefillData.workOrderId || location.state?.prefill?.workOrderId) {
+    if (location.state?.workOrderId) {
       setShowReportModal(true);
     }
   }, []);
@@ -185,10 +185,13 @@ const VendorIssues = () => {
 
                 <form onSubmit={handleSubmitIssue} className="issue-form">
                   {/* Work Order Info */}
-                  {(prefillData.poNumber || prefillData.workOrderId) && (
+                  {prefillData.workOrderId && (
                     <div className="form-info" style={{background: '#fef3c7', border: '1px solid #f59e0b', borderRadius: '8px', padding: '0.75rem 1rem', marginBottom: '1rem'}}>
                       {prefillData.poNumber && (
                         <p style={{margin: '0 0 0.25rem', fontWeight: '600'}}>📋 PO: {prefillData.poNumber}</p>
+                      )}
+                      {prefillData.drNumber && (
+                        <p style={{margin: '0 0 0.25rem'}}>🏭 DR-{prefillData.drNumber}</p>
                       )}
                       {prefillData.partIndex && (
                         <p style={{margin: '0 0 0.25rem'}}>📦 <strong>Part #{prefillData.partIndex}</strong>{prefillData.partNumber ? `: ${prefillData.partNumber}` : ''}</p>

@@ -356,10 +356,30 @@ const VendorPODetails = ({ user }) => {
             {poData.partNumber && (
               <div>
                 <p style={{margin: '0 0 0.25rem 0', color: '#666', fontSize: '0.875rem'}}>Part Number</p>
+                <p style={{margin: 0, fontWeight: '600'}}>{poData.partNumber}</p>
+              </div>
+            )}
+
+            {poData.clientPartNumber && (
+              <div>
+                <p style={{margin: '0 0 0.25rem 0', color: '#666', fontSize: '0.875rem'}}>Client PN</p>
+                <p style={{margin: 0, fontWeight: '600'}}>{poData.clientPartNumber}</p>
+              </div>
+            )}
+
+            {(poData.size || poData.dimensions || poData.thickness || poData.width || poData.length) && (
+              <div>
+                <p style={{margin: '0 0 0.25rem 0', color: '#666', fontSize: '0.875rem'}}>Size</p>
                 <p style={{margin: 0, fontWeight: '600'}}>
-                  {poData.partNumber}
-                  {poData.clientPartNumber && <span style={{color: '#666'}}> • {poData.clientPartNumber}</span>}
+                  {poData.size || poData.dimensions || [poData.thickness, poData.width, poData.length].filter(Boolean).join(' x ')}
                 </p>
+              </div>
+            )}
+
+            {(poData.diameter || poData.od || poData.outsideDiameter) && (
+              <div>
+                <p style={{margin: '0 0 0.25rem 0', color: '#666', fontSize: '0.875rem'}}>Diameter</p>
+                <p style={{margin: 0, fontWeight: '600'}}>{poData.diameter || poData.od || poData.outsideDiameter}</p>
               </div>
             )}
 
@@ -377,14 +397,7 @@ const VendorPODetails = ({ user }) => {
               </div>
             )}
 
-            {poData.workOrder?.promisedDate && (
-              <div>
-                <p style={{margin: '0 0 0.25rem 0', color: '#666', fontSize: '0.875rem'}}>Due Date</p>
-                <p style={{margin: 0, fontWeight: '600', color: '#f39c12'}}>
-                  {formatDate(poData.workOrder.promisedDate)}
-                </p>
-              </div>
-            )}
+
           </div>
 
           {poData.notes && (
@@ -441,14 +454,13 @@ const VendorPODetails = ({ user }) => {
                 </div>
                 <button
                   onClick={() => navigate('/vendor/issues', { state: {
-                    prefill: {
-                      workOrderId: poData.workOrder?.id || poData.workOrderId,
-                      workOrderPartId: partId,
-                      poNumber: poNumber,
-                      partNumber: partNum,
-                      partDescription: desc,
-                      partIndex: partIndex + 1
-                    }
+                    workOrderId: poData.workOrder?.id || poData.workOrderId || poData.id,
+                    workOrderPartId: partId,
+                    poNumber: poNumber,
+                    drNumber: poData.workOrder?.drNumber,
+                    partNumber: partNum,
+                    partDescription: desc,
+                    partIndex: partIndex + 1
                   }})}
                   style={{
                     padding: '0.45rem 0.9rem',
