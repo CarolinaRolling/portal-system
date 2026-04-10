@@ -45,8 +45,6 @@ function buildColoredMesh(mesh, meshColor, palette, meshIdx) {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(newPos, 3));
   geo.setAttribute('color',    new THREE.BufferAttribute(newColor, 3));
-  // Always recompute — STEP file normals are often inconsistent across faces
-  geo.computeVertexNormals();
 
   return geo;
 }
@@ -83,13 +81,7 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
     controls.dampingFactor = 0.05;
     controlsRef.current = controls;
 
-    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
-    const d1 = new THREE.DirectionalLight(0xffffff, 0.9);
-    d1.position.set(5, 10, 7);
-    scene.add(d1);
-    const d2 = new THREE.DirectionalLight(0xffffff, 0.4);
-    d2.position.set(-5, -5, -5);
-    scene.add(d2);
+    // No lights needed - MeshBasicMaterial renders pure vertex colors
 
     loadStepFile(fileUrl, scene, camera, controls);
 
@@ -148,9 +140,8 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
 
         // Single mesh with vertex colors — zero z-fighting
         const geo = buildColoredMesh(mesh, meshColor, palette, meshIdx);
-        group.add(new THREE.Mesh(geo, new THREE.MeshPhongMaterial({
+        group.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
           vertexColors: true,
-          shininess: 60,
           side: THREE.DoubleSide,
         })));
 
@@ -162,7 +153,7 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
           edgeGeo.setIndex(new THREE.BufferAttribute(indices, 1));
           group.add(new THREE.LineSegments(
             new THREE.EdgesGeometry(edgeGeo, 20),
-            new THREE.LineBasicMaterial({ color: 0x111111, opacity: 0.25, transparent: true })
+            new THREE.LineBasicMaterial({ color: 0x000000, opacity: 0.5, transparent: true })
           ));
         }
       });
