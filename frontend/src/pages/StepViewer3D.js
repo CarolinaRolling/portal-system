@@ -106,25 +106,62 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
       const group = new THREE.Group();
 
       result.meshes.forEach((mesh, idx) => {
-        const geometry = new THREE.BufferGeometry();
-        geometry.setAttribute('position', new THREE.BufferAttribute(new Float32Array(mesh.attributes.position.array), 3));
-        if (mesh.attributes.normal) {
-          geometry.setAttribute('normal', new THREE.BufferAttribute(new Float32Array(mesh.attributes.normal.array), 3));
+        const positions = new Float32Array(mesh.attributes.position.array);
+        const normals = mesh.attributes.normal ? new Float32Array(mesh.attributes.normal.array) : null;
+        const indices = mesh.index ? new Uint32Array(mesh.index.array) : null;
+
+        // Check if any brep_faces have individual colors
+        const hasFaceColors = mesh.brep_faces && mesh.brep_faces.some(f => f.color);
+
+        if (hasFaceColors && indices) {
+          // Split geometry by face color groups
+          mesh.brep_faces.forEach((face) => {
+            if (face.first_index === undefined || face.last_index === undefined) return;
+
+            const faceIndices = indices.slice(face.first_index, face.last_index + 1);
+            if (faceIndices.length === 0) return;
+
+            const faceGeo = new THREE.BufferGeometry();
+            faceGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            if (normals) faceGeo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+            faceGeo.setIndex(new THREE.BufferAttribute(faceIndices, 1));
+            if (!normals) faceGeo.computeVertexNormals();
+
+            const faceColor = face.color
+              ? new THREE.Color(face.color[0], face.color[1], face.color[2])
+              : mesh.color
+                ? new THREE.Color(mesh.color[0], mesh.color[1], mesh.color[2])
+                : new THREE.Color(colors[idx % colors.length]);
+
+            const mat = new THREE.MeshPhongMaterial({ color: faceColor, shininess: 80, specular: new THREE.Color(0x222222), side: THREE.DoubleSide });
+            group.add(new THREE.Mesh(faceGeo, mat));
+          });
+
+          // Edges over full mesh
+          const fullGeo = new THREE.BufferGeometry();
+          fullGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+          fullGeo.setIndex(new THREE.BufferAttribute(indices, 1));
+          const edges = new THREE.EdgesGeometry(fullGeo, 15);
+          group.add(new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, opacity: 0.12, transparent: true })));
+
+        } else {
+          // Single color for whole mesh
+          const geometry = new THREE.BufferGeometry();
+          geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+          if (normals) geometry.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+          if (indices) geometry.setIndex(new THREE.BufferAttribute(indices, 1));
+          if (!normals) geometry.computeVertexNormals();
+
+          const color = mesh.color
+            ? new THREE.Color(mesh.color[0], mesh.color[1], mesh.color[2])
+            : new THREE.Color(colors[idx % colors.length]);
+
+          const mat = new THREE.MeshPhongMaterial({ color, shininess: 80, specular: new THREE.Color(0x222222), side: THREE.DoubleSide });
+          group.add(new THREE.Mesh(geometry, mat));
+
+          const edges = new THREE.EdgesGeometry(geometry, 15);
+          group.add(new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, opacity: 0.12, transparent: true })));
         }
-        if (mesh.index) {
-          geometry.setIndex(new THREE.BufferAttribute(new Uint32Array(mesh.index.array), 1));
-        }
-        if (!mesh.attributes.normal) geometry.computeVertexNormals();
-
-        const color = mesh.color
-          ? new THREE.Color(mesh.color[0], mesh.color[1], mesh.color[2])
-          : new THREE.Color(colors[idx % colors.length]);
-
-        const mat = new THREE.MeshPhongMaterial({ color, shininess: 80, specular: new THREE.Color(0x333333), side: THREE.DoubleSide });
-        group.add(new THREE.Mesh(geometry, mat));
-
-        const edges = new THREE.EdgesGeometry(geometry, 15);
-        group.add(new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x000000, opacity: 0.15, transparent: true })));
       });
 
       scene.add(group);
