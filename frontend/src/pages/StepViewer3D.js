@@ -45,7 +45,7 @@ function buildColoredMesh(mesh, meshColor, palette, meshIdx) {
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(newPos, 3));
   geo.setAttribute('color',    new THREE.BufferAttribute(newColor, 3));
-
+  geo.computeVertexNormals(); // needed for FrontSide culling
   return geo;
 }
 
@@ -142,7 +142,7 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
         const geo = buildColoredMesh(mesh, meshColor, palette, meshIdx);
         group.add(new THREE.Mesh(geo, new THREE.MeshBasicMaterial({
           vertexColors: true,
-          side: THREE.DoubleSide,
+          side: THREE.FrontSide,
         })));
 
         // Edge lines over original indexed geometry
