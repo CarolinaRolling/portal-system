@@ -2,30 +2,63 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
-// Extract a clean sub-geometry for a face group, with its own vertices and fresh normals
-function extractFaceGeometry(positions, allIndices, firstTri, lastTri) {
-  const startBuf = firstTri * 3;
-  const endBuf = (lastTri + 1) * 3;
-  const faceIndices = allIndices.slice(startBuf, endBuf);
+// Build a single mesh with vertex colors to avoid z-fighting entirely
+function buildColoredMesh(mesh, meshColor, palette, meshIdx) {
+  const positions = new Float32Array(mesh.attributes.position.array);
+  const normals = mesh.attributes.normal
+    ? new Float32Array(mesh.attributes.normal.array) : null;
+  const indices = mesh.index ? new Uint32Array(mesh.index.array) : null;
+  const triCount = indices ? indices.length / 3 : positions.length / 9;
 
-  // Build a compact vertex set
-  const uniqueVerts = [...new Set(faceIndices)];
-  const remap = new Map(uniqueVerts.map((v, i) => [v, i]));
+  // Assign a color to every triangle based on which brep_face owns it
+  const triColors = new Array(triCount).fill(null).map(() => meshColor.clone());
 
-  const newPos = new Float32Array(uniqueVerts.length * 3);
-  uniqueVerts.forEach((v, i) => {
-    newPos[i * 3]     = positions[v * 3];
-    newPos[i * 3 + 1] = positions[v * 3 + 1];
-    newPos[i * 3 + 2] = positions[v * 3 + 2];
-  });
+  if (mesh.brep_faces) {
+    mesh.brep_faces.forEach((face) => {
+      if (face.first === undefined || face.last === undefined) return;
+      const faceColor = (face.color && face.color.length >= 3)
+        ? new THREE.Color(face.color[0], face.color[1], face.color[2])
+        : meshColor.clone();
+      for (let t = face.first; t <= face.last; t++) {
+        triColors[t] = faceColor;
+      }
+    });
+  }
 
-  const newIdx = new Uint32Array(faceIndices.length);
-  faceIndices.forEach((v, i) => { newIdx[i] = remap.get(v); });
+  // Build expanded (non-indexed) buffers so each triangle vertex gets its own color
+  const vertCount = triCount * 3;
+  const newPos   = new Float32Array(vertCount * 3);
+  const newNorm  = new Float32Array(vertCount * 3);
+  const newColor = new Float32Array(vertCount * 3);
+
+  for (let t = 0; t < triCount; t++) {
+    const c = triColors[t];
+    for (let v = 0; v < 3; v++) {
+      const srcIdx = indices ? indices[t * 3 + v] : t * 3 + v;
+      const dstIdx = t * 3 + v;
+      newPos[dstIdx * 3]     = positions[srcIdx * 3];
+      newPos[dstIdx * 3 + 1] = positions[srcIdx * 3 + 1];
+      newPos[dstIdx * 3 + 2] = positions[srcIdx * 3 + 2];
+      if (normals) {
+        newNorm[dstIdx * 3]     = normals[srcIdx * 3];
+        newNorm[dstIdx * 3 + 1] = normals[srcIdx * 3 + 1];
+        newNorm[dstIdx * 3 + 2] = normals[srcIdx * 3 + 2];
+      }
+      newColor[dstIdx * 3]     = c.r;
+      newColor[dstIdx * 3 + 1] = c.g;
+      newColor[dstIdx * 3 + 2] = c.b;
+    }
+  }
 
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(newPos, 3));
-  geo.setIndex(new THREE.BufferAttribute(newIdx, 1));
-  geo.computeVertexNormals(); // Fresh normals, no blending with other faces
+  geo.setAttribute('color',    new THREE.BufferAttribute(newColor, 3));
+  if (normals) {
+    geo.setAttribute('normal', new THREE.BufferAttribute(newNorm, 3));
+  } else {
+    geo.computeVertexNormals();
+  }
+
   return geo;
 }
 
@@ -124,42 +157,19 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
           ? new THREE.Color(mesh.color[0], mesh.color[1], mesh.color[2])
           : new THREE.Color(palette[meshIdx % palette.length]);
 
-        const hasFaceColors = mesh.brep_faces &&
-          mesh.brep_faces.some(f => f.color !== null && f.color !== undefined);
+        // Single mesh with vertex colors — zero z-fighting
+        const geo = buildColoredMesh(mesh, meshColor, palette, meshIdx);
+        group.add(new THREE.Mesh(geo, new THREE.MeshPhongMaterial({
+          vertexColors: true,
+          shininess: 60,
+          side: THREE.DoubleSide,
+        })));
 
-        if (hasFaceColors && indices && mesh.brep_faces) {
-          mesh.brep_faces.forEach((face) => {
-            if (face.first === undefined || face.last === undefined) return;
-            const geo = extractFaceGeometry(positions, indices, face.first, face.last);
-
-            const faceColor = (face.color && face.color.length >= 3)
-              ? new THREE.Color(face.color[0], face.color[1], face.color[2])
-              : meshColor.clone();
-
-            group.add(new THREE.Mesh(geo, new THREE.MeshPhongMaterial({
-              color: faceColor,
-              shininess: 60,
-              side: THREE.DoubleSide,
-            })));
-          });
-        } else {
-          // No per-face colors — render as one mesh
-          const geo = new THREE.BufferGeometry();
-          geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-          if (indices) geo.setIndex(new THREE.BufferAttribute(indices, 1));
-          geo.computeVertexNormals();
-
-          group.add(new THREE.Mesh(geo, new THREE.MeshPhongMaterial({
-            color: meshColor,
-            shininess: 60,
-            side: THREE.DoubleSide,
-          })));
-        }
-
-        // Edge lines
+        // Edge lines over original indexed geometry
         if (indices) {
           const edgeGeo = new THREE.BufferGeometry();
-          edgeGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+          const positions2 = new Float32Array(mesh.attributes.position.array);
+          edgeGeo.setAttribute('position', new THREE.BufferAttribute(positions2, 3));
           edgeGeo.setIndex(new THREE.BufferAttribute(indices, 1));
           group.add(new THREE.LineSegments(
             new THREE.EdgesGeometry(edgeGeo, 20),
