@@ -156,7 +156,7 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
 
     // No lights needed - MeshBasicMaterial renders pure vertex colors
 
-    loadStepFile(fileUrl, scene, camera, controls);
+    loadStepFile(fileUrl, scene, camera);
 
     const animate = () => {
       animationFrameRef.current = requestAnimationFrame(animate);
@@ -188,7 +188,7 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
     };
   }, [fileUrl]);
 
-  const loadStepFile = async (url, scene, camera, controls) => {
+  const loadStepFile = async (url, scene, camera) => {
     try {
       setLoading(true);
       setLoadingMsg('Downloading STEP file...');
@@ -247,8 +247,6 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
       camera.position.set(center.x + dist * 0.5, center.y + dist * 0.4, center.z + dist);
       camera.userData.initialPosition = camera.position.clone();
       camera.userData.initialTarget = center.clone();
-      controls.target.copy(center);
-      controls.update();
 
       setLoading(false);
     } catch (err) {
