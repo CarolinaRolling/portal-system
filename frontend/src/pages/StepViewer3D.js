@@ -14,7 +14,6 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
 
   useEffect(() => {
     if (!containerRef.current) return;
-
     const w = containerRef.current.clientWidth;
     const h = containerRef.current.clientHeight;
 
@@ -27,7 +26,6 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
     const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(w, h);
     renderer.setPixelRatio(window.devicePixelRatio);
-    renderer.localClippingEnabled = true;
     containerRef.current.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
@@ -36,9 +34,8 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
     controls.dampingFactor = 0.05;
     controlsRef.current = controls;
 
-    // Lighting
-    scene.add(new THREE.AmbientLight(0xffffff, 0.7));
-    const d1 = new THREE.DirectionalLight(0xffffff, 0.8);
+    scene.add(new THREE.AmbientLight(0xffffff, 0.6));
+    const d1 = new THREE.DirectionalLight(0xffffff, 0.9);
     d1.position.set(5, 10, 7);
     scene.add(d1);
     const d2 = new THREE.DirectionalLight(0xffffff, 0.4);
@@ -56,11 +53,9 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
 
     const handleResize = () => {
       if (!containerRef.current) return;
-      const w2 = containerRef.current.clientWidth;
-      const h2 = containerRef.current.clientHeight;
-      camera.aspect = w2 / h2;
+      camera.aspect = containerRef.current.clientWidth / containerRef.current.clientHeight;
       camera.updateProjectionMatrix();
-      renderer.setSize(w2, h2);
+      renderer.setSize(containerRef.current.clientWidth, containerRef.current.clientHeight);
     };
     window.addEventListener('resize', handleResize);
 
@@ -83,92 +78,92 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
 
       setLoadingMsg('Loading STEP parser...');
       const mod = await import('occt-import-js');
-      const initOpenCascade = mod.default;
+      const occt = await mod.default({ locateFile: (f) => `/${f}` });
 
       setLoadingMsg('Parsing STEP geometry...');
-      const occt = await initOpenCascade({ locateFile: (f) => `/${f}` });
       const result = occt.ReadStepFile(new Uint8Array(arrayBuffer), null);
-
       if (!result || !result.meshes || result.meshes.length === 0)
         throw new Error('No geometry found in STEP file.');
 
       setLoadingMsg('Building 3D model...');
-
-      const palette = [0x4a90e2, 0x7ecba1, 0xf59e0b, 0xe05c5c, 0x9b59b6, 0x1abc9c];
+      const palette = [0x7a9cbf, 0x7ecba1, 0xf59e0b, 0xe05c5c, 0x9b59b6, 0x1abc9c];
       const group = new THREE.Group();
 
-      result.meshes.forEach((mesh, idx) => {
+      result.meshes.forEach((mesh, meshIdx) => {
         const positions = new Float32Array(mesh.attributes.position.array);
+        const normals = mesh.attributes.normal
+          ? new Float32Array(mesh.attributes.normal.array)
+          : null;
         const indices = mesh.index ? new Uint32Array(mesh.index.array) : null;
 
-        // --- Solid back-face (renders inner surfaces, prevents see-through) ---
-        const geoBack = new THREE.BufferGeometry();
-        geoBack.setAttribute('position', new THREE.BufferAttribute(positions.slice(), 3));
-        if (indices) geoBack.setIndex(new THREE.BufferAttribute(indices.slice(), 1));
-        geoBack.computeVertexNormals();
-
-        const baseColor = mesh.color
+        const meshColor = mesh.color
           ? new THREE.Color(mesh.color[0], mesh.color[1], mesh.color[2])
-          : new THREE.Color(palette[idx % palette.length]);
+          : new THREE.Color(palette[meshIdx % palette.length]);
 
-        // Back-face pass — slightly darker
-        const matBack = new THREE.MeshPhongMaterial({
-          color: baseColor.clone().multiplyScalar(0.6),
-          side: THREE.BackSide,
-          depthWrite: true,
-        });
-        group.add(new THREE.Mesh(geoBack, matBack));
+        // Check if any faces have per-face colors (using correct 'first'/'last' keys)
+        const hasFaceColors = mesh.brep_faces &&
+          mesh.brep_faces.some(f => f.color !== null && f.color !== undefined);
 
-        // --- Front-face pass ---
-        const geoFront = new THREE.BufferGeometry();
-        geoFront.setAttribute('position', new THREE.BufferAttribute(positions.slice(), 3));
-        if (indices) geoFront.setIndex(new THREE.BufferAttribute(indices.slice(), 1));
-        geoFront.computeVertexNormals();
-
-        // Handle per-face colors if available
-        if (mesh.brep_faces && mesh.brep_faces.some(f => f.color) && indices) {
+        if (hasFaceColors && indices && mesh.brep_faces) {
+          // Render each face group separately with its own color
           mesh.brep_faces.forEach((face) => {
-            if (face.first_index === undefined || face.last_index === undefined) return;
-            const fi = indices.slice(face.first_index, face.last_index + 1);
-            if (fi.length === 0) return;
+            // face.first / face.last are TRIANGLE indices — multiply by 3 for buffer positions
+            if (face.first === undefined || face.last === undefined) return;
+            const bufStart = face.first * 3;
+            const bufEnd = (face.last + 1) * 3;
+            const faceIndices = indices.slice(bufStart, bufEnd);
+            if (faceIndices.length === 0) return;
 
-            const fg = new THREE.BufferGeometry();
-            fg.setAttribute('position', new THREE.BufferAttribute(positions.slice(), 3));
-            fg.setIndex(new THREE.BufferAttribute(fi, 1));
-            fg.computeVertexNormals();
+            const geo = new THREE.BufferGeometry();
+            geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+            if (normals) geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+            geo.setIndex(new THREE.BufferAttribute(faceIndices, 1));
+            if (!normals) geo.computeVertexNormals();
 
-            const fc = face.color
+            const faceColor = (face.color && face.color.length >= 3)
               ? new THREE.Color(face.color[0], face.color[1], face.color[2])
-              : baseColor;
+              : meshColor.clone();
 
-            group.add(new THREE.Mesh(fg, new THREE.MeshPhongMaterial({
-              color: fc, shininess: 60, side: THREE.FrontSide, depthWrite: true,
+            group.add(new THREE.Mesh(geo, new THREE.MeshPhongMaterial({
+              color: faceColor,
+              shininess: 70,
+              side: THREE.DoubleSide,
             })));
           });
         } else {
-          group.add(new THREE.Mesh(geoFront, new THREE.MeshPhongMaterial({
-            color: baseColor, shininess: 60, side: THREE.FrontSide, depthWrite: true,
+          // Single color for whole mesh
+          const geo = new THREE.BufferGeometry();
+          geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+          if (normals) geo.setAttribute('normal', new THREE.BufferAttribute(normals, 3));
+          if (indices) geo.setIndex(new THREE.BufferAttribute(indices, 1));
+          if (!normals) geo.computeVertexNormals();
+
+          group.add(new THREE.Mesh(geo, new THREE.MeshPhongMaterial({
+            color: meshColor,
+            shininess: 70,
+            side: THREE.DoubleSide,
           })));
         }
 
-        // Subtle edge lines
-        const edgeGeo = new THREE.BufferGeometry();
-        edgeGeo.setAttribute('position', new THREE.BufferAttribute(positions.slice(), 3));
-        if (indices) edgeGeo.setIndex(new THREE.BufferAttribute(indices.slice(), 1));
-        const edges = new THREE.EdgesGeometry(edgeGeo, 20);
-        group.add(new THREE.LineSegments(edges, new THREE.LineBasicMaterial({
-          color: 0x222222, opacity: 0.3, transparent: true,
-        })));
+        // Edge lines over full mesh
+        if (indices) {
+          const edgeGeo = new THREE.BufferGeometry();
+          edgeGeo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
+          edgeGeo.setIndex(new THREE.BufferAttribute(indices, 1));
+          group.add(new THREE.LineSegments(
+            new THREE.EdgesGeometry(edgeGeo, 20),
+            new THREE.LineBasicMaterial({ color: 0x111111, opacity: 0.25, transparent: true })
+          ));
+        }
       });
 
       scene.add(group);
 
-      // Fit camera
+      // Fit camera to model
       const box = new THREE.Box3().setFromObject(group);
       const center = box.getCenter(new THREE.Vector3());
       const size = box.getSize(new THREE.Vector3());
-      const maxDim = Math.max(size.x, size.y, size.z);
-      const dist = Math.abs(maxDim / Math.tan(camera.fov * Math.PI / 360)) * 1.6;
+      const dist = Math.abs(Math.max(size.x, size.y, size.z) / Math.tan(camera.fov * Math.PI / 360)) * 1.6;
       camera.position.set(center.x + dist * 0.5, center.y + dist * 0.4, center.z + dist);
       camera.userData.initialPosition = camera.position.clone();
       camera.userData.initialTarget = center.clone();
@@ -184,12 +179,10 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
   };
 
   const handleResetView = () => {
-    if (cameraRef.current && controlsRef.current) {
-      const cam = cameraRef.current;
-      if (cam.userData.initialPosition) {
-        cam.position.copy(cam.userData.initialPosition);
-        controlsRef.current.target.copy(cam.userData.initialTarget);
-      }
+    const cam = cameraRef.current;
+    if (cam && controlsRef.current && cam.userData.initialPosition) {
+      cam.position.copy(cam.userData.initialPosition);
+      controlsRef.current.target.copy(cam.userData.initialTarget);
       controlsRef.current.update();
     }
   };
@@ -197,17 +190,16 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
   return (
     <div style={{ position: 'fixed', top: 0, left: 0, right: 0, bottom: 0, background: 'rgba(0,0,0,0.85)', zIndex: 10000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1.5rem' }}>
       <div style={{ background: 'white', borderRadius: '12px', width: '100%', maxWidth: '1200px', height: '92vh', display: 'flex', flexDirection: 'column', overflow: 'hidden', boxShadow: '0 25px 70px rgba(0,0,0,0.4)' }}>
-
         <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid #e0e0e0', display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: '#fafafa' }}>
           <div>
             <h2 style={{ margin: '0 0 0.25rem 0', fontSize: '1.4rem' }}>🎨 3D Viewer</h2>
             <p style={{ margin: 0, color: '#888', fontSize: '0.85rem' }}>{fileName}</p>
           </div>
-          <button onClick={onClose} style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: '#999', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
+          <button onClick={onClose}
+            style={{ background: 'none', border: 'none', fontSize: '1.8rem', cursor: 'pointer', color: '#999', width: '38px', height: '38px', display: 'flex', alignItems: 'center', justifyContent: 'center', borderRadius: '50%' }}
             onMouseEnter={e => e.currentTarget.style.background = '#f0f0f0'}
             onMouseLeave={e => e.currentTarget.style.background = 'none'}>✕</button>
         </div>
-
         <div style={{ padding: '0.75rem 1.5rem', background: '#fafafa', borderBottom: '1px solid #e0e0e0', display: 'flex', gap: '1rem', alignItems: 'center' }}>
           <button onClick={handleResetView} style={{ padding: '0.4rem 1rem', background: '#f59e0b', color: 'white', border: 'none', borderRadius: '6px', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}>
             🔄 Reset View
@@ -216,7 +208,6 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
             <strong>Controls:</strong> Left-click + drag to rotate &nbsp;•&nbsp; Right-click + drag to pan &nbsp;•&nbsp; Scroll to zoom
           </div>
         </div>
-
         <div style={{ flex: 1, position: 'relative' }}>
           {loading && (
             <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.95)', zIndex: 10 }}>
