@@ -128,6 +128,9 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
               color: faceColor,
               shininess: 70,
               side: THREE.DoubleSide,
+              polygonOffset: true,
+              polygonOffsetFactor: 1,
+              polygonOffsetUnits: 1,
             })));
           });
         } else {
@@ -142,6 +145,9 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
             color: meshColor,
             shininess: 70,
             side: THREE.DoubleSide,
+            polygonOffset: true,
+            polygonOffsetFactor: 1,
+            polygonOffsetUnits: 1,
           })));
         }
 
