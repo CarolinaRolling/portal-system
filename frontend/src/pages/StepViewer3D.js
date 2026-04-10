@@ -293,8 +293,8 @@ const StepViewer3D = ({ fileUrl, fileName, onClose }) => {
     const g = controlsRef.current && controlsRef.current.groupRef && controlsRef.current.groupRef.current;
     const cam = cameraRef.current;
     if (!g || !cam) return;
-    // Rotate around the camera's current "up" axis relative to the view
-    const axis = new THREE.Vector3(0, 1, 0).applyQuaternion(cam.quaternion);
+    // Rotate around the camera's look direction so it spins relative to current view
+    const axis = new THREE.Vector3(0, 0, -1).applyQuaternion(cam.quaternion);
     const angle = direction === 'cw' ? -Math.PI / 2 : Math.PI / 2;
     const q = new THREE.Quaternion().setFromAxisAngle(axis, angle);
     g.quaternion.premultiply(q);
