@@ -460,16 +460,16 @@ const VendorPODetails = ({ user }) => {
                       📄 {fileName}
                     </p>
                     <p style={{margin: 0, color: '#666', fontSize: '0.875rem'}}>
-                      Shared: {formatDate(file.sharedAt || file.createdAt || file.uploadedAt)}
+                      {(file.sharedAt || file.createdAt || file.uploadedAt) ? `Uploaded: ${formatDate(file.sharedAt || file.createdAt || file.uploadedAt)}` : ''}
                       {is3D && <span style={{marginLeft: '0.5rem', color: '#8b5cf6'}}>• 3D Viewable</span>}
                     </p>
                   </div>
-                  <div style={{display: 'flex', gap: '0.5rem'}}>
+                  <div style={{display: 'flex', flexDirection: 'column', gap: '0.5rem', minWidth: '140px'}}>
                     {is3D && (
                       <button
                         onClick={() => handleView3D(file.id, fileName)}
                         style={{
-                          padding: '0.75rem 1.5rem',
+                          padding: '0.6rem 1rem',
                           background: '#8b5cf6',
                           color: 'white',
                           border: 'none',
@@ -477,7 +477,8 @@ const VendorPODetails = ({ user }) => {
                           cursor: 'pointer',
                           fontWeight: '600',
                           transition: 'all 0.2s',
-                          whiteSpace: 'nowrap'
+                          width: '100%',
+                          textAlign: 'center'
                         }}
                         onMouseEnter={(e) => {
                           e.currentTarget.style.background = '#7c3aed';
@@ -493,7 +494,7 @@ const VendorPODetails = ({ user }) => {
                       onClick={() => handleDownloadFile(file.id, fileName)}
                       disabled={downloadingFile === file.id}
                       style={{
-                        padding: '0.75rem 1.5rem',
+                        padding: '0.6rem 1rem',
                         background: downloadingFile === file.id ? '#ccc' : '#f59e0b',
                         color: 'white',
                         border: 'none',
@@ -501,7 +502,8 @@ const VendorPODetails = ({ user }) => {
                         cursor: downloadingFile === file.id ? 'not-allowed' : 'pointer',
                         fontWeight: '600',
                         transition: 'all 0.2s',
-                        whiteSpace: 'nowrap'
+                        width: '100%',
+                        textAlign: 'center'
                       }}
                       onMouseEnter={(e) => {
                         if (downloadingFile !== file.id) {
