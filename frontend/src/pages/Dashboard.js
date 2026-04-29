@@ -14,8 +14,9 @@ const Dashboard = ({ user }) => {
   const [showOlderEstimates, setShowOlderEstimates] = useState(false);
   const [workOrderMTRs, setWorkOrderMTRs] = useState({}); // Store MTRs by work order ID
   const [expandedMTRs, setExpandedMTRs] = useState({}); // Track which work orders have MTRs expanded
-  const [workOrderPortalDocs, setWorkOrderPortalDocs] = useState({}); // Store portal documents by DR number
-  const [expandedPortalDocs, setExpandedPortalDocs] = useState({}); // Track which work orders have portal docs expanded
+  const [workOrderPortalDocs, setWorkOrderPortalDocs] = useState({}); // Store portal documents by DR number (all types)
+  const [expandedPortalDocs, setExpandedPortalDocs] = useState({}); // Track which work orders have COC/portal docs expanded
+  const [expandedShippingDocs, setExpandedShippingDocs] = useState({}); // Track which work orders have shipping docs expanded
   const [estimatePDFs, setEstimatePDFs] = useState({}); // Store PDF files by estimate ID
   const [estimatePortalFiles, setEstimatePortalFiles] = useState({}); // Store portal files by estimate number
   const [expandedEstimateFiles, setExpandedEstimateFiles] = useState({}); // Track which estimates have files expanded
@@ -145,6 +146,15 @@ const Dashboard = ({ user }) => {
         shippedAt: wo.shippedAt, 
         pickedUpAt: wo.pickedUpAt 
       })));
+
+      // DEBUG: Log all keys on a picked-up work order so we can identify the
+      // exact "picked up by" field name from Carolina. Remove this log once
+      // the field name is confirmed and wired into getPickedUpBy().
+      const samplePickedUp = workOrdersToProcess.find(wo => wo.pickedUpAt);
+      if (samplePickedUp) {
+        console.log('🔍 PICKED-UP WO ALL KEYS:', Object.keys(samplePickedUp).sort());
+        console.log('🔍 PICKED-UP WO FULL OBJECT:', samplePickedUp);
+      }
       
       // DEBUG: Check for duplicates in recently shipped
       const recentIds = recent.map(wo => wo.id);
@@ -347,6 +357,102 @@ const Dashboard = ({ user }) => {
       [drNumber]: !prev[drNumber]
     }));
   };
+
+  const toggleShippingDocs = (drNumber) => {
+    setExpandedShippingDocs(prev => ({
+      ...prev,
+      [drNumber]: !prev[drNumber]
+    }));
+  };
+
+  // Split portal docs into shipping docs vs everything else (COC + other).
+  // Carolina API tags shipping documents with documentType === 'shipping_doc'.
+  // Anything else from the portal endpoint (COCs, etc.) goes in the "COC" bucket.
+  const isShippingDoc = (doc) => {
+    const t = (doc.documentType || doc.type || '').toLowerCase();
+    return t === 'shipping_doc' || t === 'shipping' || t === 'bol';
+  };
+  const getShippingDocs = (drNumber) =>
+    (workOrderPortalDocs[drNumber] || []).filter(isShippingDoc);
+  const getCocDocs = (drNumber) =>
+    (workOrderPortalDocs[drNumber] || []).filter(d => !isShippingDoc(d));
+
+  // Render a portal-doc section (COC or Shipping). Returns null when empty so
+  // the section disappears entirely if there are no docs of that type.
+  const renderPortalDocSection = ({ drNumber, docs, title, isExpanded, onToggle }) => {
+    if (!docs || docs.length === 0) return null;
+    return (
+      <div className="mtr-section" style={{ marginTop: '1rem' }}>
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '0.5rem',
+            cursor: 'pointer'
+          }}
+          onClick={onToggle}
+        >
+          <p className="mtr-title" style={{ margin: 0 }}>
+            {title} ({docs.length})
+          </p>
+          <button
+            className="toggle-btn"
+            style={{
+              background: 'none',
+              border: 'none',
+              cursor: 'pointer',
+              fontSize: '0.9rem',
+              padding: '0.25rem 0.5rem'
+            }}
+          >
+            {isExpanded ? '▼ Hide' : '▶ Show'}
+          </button>
+        </div>
+
+        {isExpanded && (
+          <div className="mtr-list">
+            {docs.map((doc) => (
+              <div key={doc.id} style={{ marginBottom: '0.5rem' }}>
+                <div style={{ fontSize: '0.85rem', color: '#666', marginBottom: '0.25rem' }}>
+                  {doc.name}
+                </div>
+                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                  <button
+                    className="mtr-download-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleViewPortalDoc(drNumber, doc.id, doc.name, doc.downloadUrl);
+                    }}
+                    title={`View ${doc.name}`}
+                  >
+                    👁️ View
+                  </button>
+                  <button
+                    className="mtr-download-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleDownloadPortalDoc(drNumber, doc.id, doc.name, doc.downloadUrl);
+                    }}
+                    title={`Download ${doc.name}`}
+                  >
+                    📥 Download
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  // Resolve "picked up by" from whichever field Carolina happens to populate.
+  // After deploy, check the browser console once for the actual field name and
+  // we can lock this down to the canonical one.
+  const getPickedUpBy = (wo) =>
+    wo.pickedUpBy || wo.pickupName || wo.pickedUpByName ||
+    wo.pickupSignedBy || wo.pickupCarrier || wo.signedBy || null;
 
   const handleViewPortalDoc = async (drNumber, docId, fileName, downloadUrl) => {
     try {
@@ -1059,7 +1165,10 @@ const Dashboard = ({ user }) => {
                     <p className="date shipped">🚚 Shipped: {new Date(wo.shippedAt).toLocaleDateString()}</p>
                   )}
                   {wo.pickedUpAt && (
-                    <p className="date picked-up">✅ Picked Up: {new Date(wo.pickedUpAt).toLocaleDateString()}</p>
+                    <p className="date picked-up">
+                      ✅ Picked Up: {new Date(wo.pickedUpAt).toLocaleDateString()}
+                      {getPickedUpBy(wo) && <> — by {getPickedUpBy(wo)}</>}
+                    </p>
                   )}
                   
                   {/* MTR Documents */}
@@ -1128,71 +1237,21 @@ const Dashboard = ({ user }) => {
                     </div>
                   )}
                   
-                  {/* Portal Documents */}
-                  {workOrderPortalDocs[wo.drNumber] && workOrderPortalDocs[wo.drNumber].length > 0 && (
-                    <div className="mtr-section" style={{marginTop: '1rem'}}>
-                      <div 
-                        style={{
-                          display: 'flex', 
-                          justifyContent: 'space-between', 
-                          alignItems: 'center',
-                          marginBottom: '0.5rem',
-                          cursor: 'pointer'
-                        }}
-                        onClick={() => togglePortalDocs(wo.drNumber)}
-                      >
-                        <p className="mtr-title" style={{margin: 0}}>
-                          📋 Documents ({workOrderPortalDocs[wo.drNumber].length})
-                        </p>
-                        <button 
-                          className="toggle-btn"
-                          style={{
-                            background: 'none',
-                            border: 'none',
-                            cursor: 'pointer',
-                            fontSize: '0.9rem',
-                            padding: '0.25rem 0.5rem'
-                          }}
-                        >
-                          {expandedPortalDocs[wo.drNumber] ? '▼ Hide' : '▶ Show'}
-                        </button>
-                      </div>
-                      
-                      {expandedPortalDocs[wo.drNumber] && (
-                        <div className="mtr-list">
-                          {workOrderPortalDocs[wo.drNumber].map((doc) => (
-                            <div key={doc.id} style={{marginBottom: '0.5rem'}}>
-                              <div style={{fontSize: '0.85rem', color: '#666', marginBottom: '0.25rem'}}>
-                                {doc.name}
-                              </div>
-                              <div style={{display: 'flex', gap: '0.5rem', flexWrap: 'wrap'}}>
-                                <button
-                                  className="mtr-download-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleViewPortalDoc(wo.drNumber, doc.id, doc.name, doc.downloadUrl);
-                                  }}
-                                  title={`View ${doc.name}`}
-                                >
-                                  👁️ View
-                                </button>
-                                <button
-                                  className="mtr-download-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleDownloadPortalDoc(wo.drNumber, doc.id, doc.name, doc.downloadUrl);
-                                  }}
-                                  title={`Download ${doc.name}`}
-                                >
-                                  📥 Download
-                                </button>
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      )}
-                    </div>
-                  )}
+                  {/* COC + Shipping Documents (split from Carolina portal docs by documentType) */}
+                  {renderPortalDocSection({
+                    drNumber: wo.drNumber,
+                    docs: getCocDocs(wo.drNumber),
+                    title: '📜 Certificates of Conformance (COC)',
+                    isExpanded: !!expandedPortalDocs[wo.drNumber],
+                    onToggle: () => togglePortalDocs(wo.drNumber)
+                  })}
+                  {renderPortalDocSection({
+                    drNumber: wo.drNumber,
+                    docs: getShippingDocs(wo.drNumber),
+                    title: '🚚 Shipping Documents',
+                    isExpanded: !!expandedShippingDocs[wo.drNumber],
+                    onToggle: () => toggleShippingDocs(wo.drNumber)
+                  })}
                 </div>
               </div>
             ))}
@@ -1259,7 +1318,10 @@ const Dashboard = ({ user }) => {
                       <p className="date shipped">🚚 Shipped: {new Date(wo.shippedAt).toLocaleDateString()}</p>
                     )}
                     {wo.pickedUpAt && (
-                      <p className="date picked-up">✅ Picked Up: {new Date(wo.pickedUpAt).toLocaleDateString()}</p>
+                      <p className="date picked-up">
+                        ✅ Picked Up: {new Date(wo.pickedUpAt).toLocaleDateString()}
+                        {getPickedUpBy(wo) && <> — by {getPickedUpBy(wo)}</>}
+                      </p>
                     )}
                     
                     {/* MTR Documents */}
@@ -1328,71 +1390,21 @@ const Dashboard = ({ user }) => {
                       </div>
                     )}
                     
-                    {/* Portal Documents */}
-                    {workOrderPortalDocs[wo.drNumber] && workOrderPortalDocs[wo.drNumber].length > 0 && (
-                      <div className="mtr-section" style={{marginTop: '1rem'}}>
-                        <div 
-                          style={{
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
-                            alignItems: 'center',
-                            marginBottom: '0.5rem',
-                            cursor: 'pointer'
-                          }}
-                          onClick={() => togglePortalDocs(wo.drNumber)}
-                        >
-                          <p className="mtr-title" style={{margin: 0}}>
-                            📋 Documents ({workOrderPortalDocs[wo.drNumber].length})
-                          </p>
-                          <button 
-                            className="toggle-btn"
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              cursor: 'pointer',
-                              fontSize: '0.9rem',
-                              padding: '0.25rem 0.5rem'
-                            }}
-                          >
-                            {expandedPortalDocs[wo.drNumber] ? '▼ Hide' : '▶ Show'}
-                          </button>
-                        </div>
-                        
-                        {expandedPortalDocs[wo.drNumber] && (
-                          <div className="mtr-list">
-                            {workOrderPortalDocs[wo.drNumber].map((doc) => (
-                              <div key={doc.id} style={{marginBottom: '0.5rem'}}>
-                                <div style={{fontSize: '0.85rem', color: '#666', marginBottom: '0.25rem'}}>
-                                  {doc.name}
-                                </div>
-                                <div style={{display: 'flex', gap: '0.5rem', flexWrap: 'wrap'}}>
-                                  <button
-                                    className="mtr-download-btn"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleViewPortalDoc(wo.drNumber, doc.id, doc.name, doc.downloadUrl);
-                                    }}
-                                    title={`View ${doc.name}`}
-                                  >
-                                    👁️ View
-                                  </button>
-                                  <button
-                                    className="mtr-download-btn"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDownloadPortalDoc(wo.drNumber, doc.id, doc.name, doc.downloadUrl);
-                                    }}
-                                    title={`Download ${doc.name}`}
-                                  >
-                                    📥 Download
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    {/* COC + Shipping Documents (split from Carolina portal docs by documentType) */}
+                    {renderPortalDocSection({
+                      drNumber: wo.drNumber,
+                      docs: getCocDocs(wo.drNumber),
+                      title: '📜 Certificates of Conformance (COC)',
+                      isExpanded: !!expandedPortalDocs[wo.drNumber],
+                      onToggle: () => togglePortalDocs(wo.drNumber)
+                    })}
+                    {renderPortalDocSection({
+                      drNumber: wo.drNumber,
+                      docs: getShippingDocs(wo.drNumber),
+                      title: '🚚 Shipping Documents',
+                      isExpanded: !!expandedShippingDocs[wo.drNumber],
+                      onToggle: () => toggleShippingDocs(wo.drNumber)
+                    })}
                   </div>
                 </div>
               ))}
@@ -1491,7 +1503,10 @@ const Dashboard = ({ user }) => {
                       <p className="date shipped">🚚 Shipped: {new Date(wo.shippedAt).toLocaleDateString()}</p>
                     )}
                     {wo.pickedUpAt && (
-                      <p className="date picked-up">✅ Picked Up: {new Date(wo.pickedUpAt).toLocaleDateString()}</p>
+                      <p className="date picked-up">
+                        ✅ Picked Up: {new Date(wo.pickedUpAt).toLocaleDateString()}
+                        {getPickedUpBy(wo) && <> — by {getPickedUpBy(wo)}</>}
+                      </p>
                     )}
                     
                     {/* MTR Documents */}
@@ -1560,71 +1575,21 @@ const Dashboard = ({ user }) => {
                       </div>
                     )}
                     
-                    {/* Portal Documents */}
-                    {workOrderPortalDocs[wo.drNumber] && workOrderPortalDocs[wo.drNumber].length > 0 && (
-                      <div className="mtr-section" style={{marginTop: '1rem'}}>
-                        <div 
-                          style={{
-                            display: 'flex', 
-                            justifyContent: 'space-between', 
-                            alignItems: 'center',
-                            marginBottom: '0.5rem',
-                            cursor: 'pointer'
-                          }}
-                          onClick={() => togglePortalDocs(wo.drNumber)}
-                        >
-                          <p className="mtr-title" style={{margin: 0}}>
-                            📋 Documents ({workOrderPortalDocs[wo.drNumber].length})
-                          </p>
-                          <button 
-                            className="toggle-btn"
-                            style={{
-                              background: 'none',
-                              border: 'none',
-                              cursor: 'pointer',
-                              fontSize: '0.9rem',
-                              padding: '0.25rem 0.5rem'
-                            }}
-                          >
-                            {expandedPortalDocs[wo.drNumber] ? '▼ Hide' : '▶ Show'}
-                          </button>
-                        </div>
-                        
-                        {expandedPortalDocs[wo.drNumber] && (
-                          <div className="mtr-list">
-                            {workOrderPortalDocs[wo.drNumber].map((doc) => (
-                              <div key={doc.id} style={{marginBottom: '0.5rem'}}>
-                                <div style={{fontSize: '0.85rem', color: '#666', marginBottom: '0.25rem'}}>
-                                  {doc.name}
-                                </div>
-                                <div style={{display: 'flex', gap: '0.5rem', flexWrap: 'wrap'}}>
-                                  <button
-                                    className="mtr-download-btn"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleViewPortalDoc(wo.drNumber, doc.id, doc.name, doc.downloadUrl);
-                                    }}
-                                    title={`View ${doc.name}`}
-                                  >
-                                    👁️ View
-                                  </button>
-                                  <button
-                                    className="mtr-download-btn"
-                                    onClick={(e) => {
-                                      e.stopPropagation();
-                                      handleDownloadPortalDoc(wo.drNumber, doc.id, doc.name, doc.downloadUrl);
-                                    }}
-                                    title={`Download ${doc.name}`}
-                                  >
-                                    📥 Download
-                                  </button>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                    )}
+                    {/* COC + Shipping Documents (split from Carolina portal docs by documentType) */}
+                    {renderPortalDocSection({
+                      drNumber: wo.drNumber,
+                      docs: getCocDocs(wo.drNumber),
+                      title: '📜 Certificates of Conformance (COC)',
+                      isExpanded: !!expandedPortalDocs[wo.drNumber],
+                      onToggle: () => togglePortalDocs(wo.drNumber)
+                    })}
+                    {renderPortalDocSection({
+                      drNumber: wo.drNumber,
+                      docs: getShippingDocs(wo.drNumber),
+                      title: '🚚 Shipping Documents',
+                      isExpanded: !!expandedShippingDocs[wo.drNumber],
+                      onToggle: () => toggleShippingDocs(wo.drNumber)
+                    })}
                   </div>
                 </div>
               ))}
