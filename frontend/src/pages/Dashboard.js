@@ -148,12 +148,21 @@ const Dashboard = ({ user }) => {
       })));
 
       // DEBUG: Log all keys on a picked-up work order so we can identify the
-      // exact "picked up by" field name from Carolina. Remove this log once
-      // the field name is confirmed and wired into getPickedUpBy().
+      // exact "picked up by" field name from Carolina. Also expands pickupHistory
+      // because Carolina stores the real pickup details there.
+      // Remove these logs once getPickedUpBy() is locked to the canonical field name.
       const samplePickedUp = workOrdersToProcess.find(wo => wo.pickedUpAt);
       if (samplePickedUp) {
         console.log('🔍 PICKED-UP WO ALL KEYS:', Object.keys(samplePickedUp).sort());
-        console.log('🔍 PICKED-UP WO FULL OBJECT:', samplePickedUp);
+        console.log('🔍 PICKED-UP WO pickedUpBy (top-level):', samplePickedUp.pickedUpBy);
+        if (Array.isArray(samplePickedUp.pickupHistory) && samplePickedUp.pickupHistory.length > 0) {
+          const last = samplePickedUp.pickupHistory[samplePickedUp.pickupHistory.length - 1];
+          console.log('🔍 pickupHistory entry count:', samplePickedUp.pickupHistory.length);
+          console.log('🔍 pickupHistory[latest] KEYS:', Object.keys(last || {}).sort());
+          console.log('🔍 pickupHistory[latest] FULL:', last);
+        } else {
+          console.log('🔍 pickupHistory is empty or missing');
+        }
       }
       
       // DEBUG: Check for duplicates in recently shipped
@@ -447,12 +456,41 @@ const Dashboard = ({ user }) => {
     );
   };
 
-  // Resolve "picked up by" from whichever field Carolina happens to populate.
-  // After deploy, check the browser console once for the actual field name and
-  // we can lock this down to the canonical one.
-  const getPickedUpBy = (wo) =>
-    wo.pickedUpBy || wo.pickupName || wo.pickedUpByName ||
-    wo.pickupSignedBy || wo.pickupCarrier || wo.signedBy || null;
+  // True if the value is a real name (not null, empty, or a placeholder like "unknown").
+  // Carolina's API returns the literal string "unknown" as a default when no name was
+  // captured at pickup, so we have to filter it out explicitly.
+  const isMeaningfulName = (v) => {
+    if (!v || typeof v !== 'string') return false;
+    const t = v.trim().toLowerCase();
+    return t.length > 0 && t !== 'unknown' && t !== 'n/a' && t !== 'none' && t !== 'null';
+  };
+
+  // Resolve "picked up by" — prefer the pickupHistory array (which cradmin reads from),
+  // fall back to the top-level pickedUpBy field. The exact field name inside a
+  // pickupHistory entry isn't confirmed yet; we try the most likely names and the
+  // debug log in fetchOrders() shows the actual structure for verification.
+  const getPickedUpBy = (wo) => {
+    if (Array.isArray(wo.pickupHistory) && wo.pickupHistory.length > 0) {
+      // Most recent pickup is likely the last entry; fall back to first if needed.
+      const candidates = [
+        wo.pickupHistory[wo.pickupHistory.length - 1],
+        wo.pickupHistory[0]
+      ];
+      for (const entry of candidates) {
+        if (!entry || typeof entry !== 'object') continue;
+        const name =
+          entry.pickedUpBy || entry.name || entry.pickedBy ||
+          entry.personName || entry.recipientName ||
+          entry.signedBy || entry.signedByName ||
+          entry.driverName || entry.carrierName ||
+          (entry.signature && (entry.signature.name || entry.signature.signedBy)) ||
+          null;
+        if (isMeaningfulName(name)) return name;
+      }
+    }
+    if (isMeaningfulName(wo.pickedUpBy)) return wo.pickedUpBy;
+    return null;
+  };
 
   const handleViewPortalDoc = async (drNumber, docId, fileName, downloadUrl) => {
     try {
