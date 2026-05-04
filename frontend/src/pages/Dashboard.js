@@ -148,18 +148,20 @@ const Dashboard = ({ user }) => {
       })));
 
       // DEBUG: Log all keys on a picked-up work order so we can identify the
-      // exact "picked up by" field name from Carolina. Also expands pickupHistory
-      // because Carolina stores the real pickup details there.
-      // Remove these logs once getPickedUpBy() is locked to the canonical field name.
+      // exact "picked up by" field name from Carolina. Also dumps the full
+      // pickupHistory array (Carolina stores the real per-pickup details there,
+      // including for partial shipments).
+      // Remove these logs once renderPickupLines() is locked to canonical fields.
       const samplePickedUp = workOrdersToProcess.find(wo => wo.pickedUpAt);
       if (samplePickedUp) {
         console.log('🔍 PICKED-UP WO ALL KEYS:', Object.keys(samplePickedUp).sort());
         console.log('🔍 PICKED-UP WO pickedUpBy (top-level):', samplePickedUp.pickedUpBy);
         if (Array.isArray(samplePickedUp.pickupHistory) && samplePickedUp.pickupHistory.length > 0) {
-          const last = samplePickedUp.pickupHistory[samplePickedUp.pickupHistory.length - 1];
           console.log('🔍 pickupHistory entry count:', samplePickedUp.pickupHistory.length);
-          console.log('🔍 pickupHistory[latest] KEYS:', Object.keys(last || {}).sort());
-          console.log('🔍 pickupHistory[latest] FULL:', last);
+          console.log('🔍 pickupHistory FULL ARRAY:', samplePickedUp.pickupHistory);
+          samplePickedUp.pickupHistory.forEach((entry, i) => {
+            console.log(`🔍 pickupHistory[${i}] KEYS:`, Object.keys(entry || {}).sort());
+          });
         } else {
           console.log('🔍 pickupHistory is empty or missing');
         }
@@ -489,6 +491,60 @@ const Dashboard = ({ user }) => {
       }
     }
     if (isMeaningfulName(wo.pickedUpBy)) return wo.pickedUpBy;
+    return null;
+  };
+
+  // Pull a date out of one pickupHistory entry. Tries common field names because
+  // we haven't yet confirmed Carolina's canonical schema for these entries.
+  const getEntryPickupDate = (entry) =>
+    entry?.pickedUpAt || entry?.date || entry?.timestamp ||
+    entry?.pickedAt || entry?.createdAt || null;
+
+  // Pull a name out of one pickupHistory entry, filtered by isMeaningfulName.
+  const getEntryPickupName = (entry) => {
+    if (!entry || typeof entry !== 'object') return null;
+    const raw =
+      entry.pickedUpBy || entry.name || entry.pickedBy ||
+      entry.personName || entry.recipientName ||
+      entry.signedBy || entry.signedByName ||
+      entry.driverName || entry.carrierName ||
+      (entry.signature && (entry.signature.name || entry.signature.signedBy)) ||
+      null;
+    return isMeaningfulName(raw) ? raw : null;
+  };
+
+  // Render pickup line(s) for a work order.
+  // - If pickupHistory has usable entries → render one line per entry.
+  // - Otherwise fall back to the single top-level pickedUpAt/pickedUpBy line.
+  // For single-pickup orders this looks identical to the previous behavior.
+  const renderPickupLines = (wo) => {
+    const entries = Array.isArray(wo.pickupHistory) ? wo.pickupHistory : [];
+    if (entries.length > 0) {
+      const lines = entries
+        .map((entry, i) => {
+          const date = getEntryPickupDate(entry);
+          const name = getEntryPickupName(entry);
+          if (!date && !name) return null; // skip empty/unusable entries
+          return (
+            <p key={i} className="date picked-up">
+              ✅ Picked Up: {date ? new Date(date).toLocaleDateString() : '—'}
+              {name && <> — by {name}</>}
+            </p>
+          );
+        })
+        .filter(Boolean);
+      if (lines.length > 0) return <>{lines}</>;
+    }
+    // No usable history → fall back to the single top-level field
+    if (wo.pickedUpAt) {
+      const fallbackName = getPickedUpBy(wo);
+      return (
+        <p className="date picked-up">
+          ✅ Picked Up: {new Date(wo.pickedUpAt).toLocaleDateString()}
+          {fallbackName && <> — by {fallbackName}</>}
+        </p>
+      );
+    }
     return null;
   };
 
@@ -1202,12 +1258,7 @@ const Dashboard = ({ user }) => {
                   {wo.shippedAt && (
                     <p className="date shipped">🚚 Shipped: {new Date(wo.shippedAt).toLocaleDateString()}</p>
                   )}
-                  {wo.pickedUpAt && (
-                    <p className="date picked-up">
-                      ✅ Picked Up: {new Date(wo.pickedUpAt).toLocaleDateString()}
-                      {getPickedUpBy(wo) && <> — by {getPickedUpBy(wo)}</>}
-                    </p>
-                  )}
+                  {renderPickupLines(wo)}
                   
                   {/* MTR Documents */}
                   {workOrderMTRs[wo.id] && workOrderMTRs[wo.id].length > 0 && (
@@ -1355,12 +1406,7 @@ const Dashboard = ({ user }) => {
                     {wo.shippedAt && (
                       <p className="date shipped">🚚 Shipped: {new Date(wo.shippedAt).toLocaleDateString()}</p>
                     )}
-                    {wo.pickedUpAt && (
-                      <p className="date picked-up">
-                        ✅ Picked Up: {new Date(wo.pickedUpAt).toLocaleDateString()}
-                        {getPickedUpBy(wo) && <> — by {getPickedUpBy(wo)}</>}
-                      </p>
-                    )}
+                    {renderPickupLines(wo)}
                     
                     {/* MTR Documents */}
                     {workOrderMTRs[wo.id] && workOrderMTRs[wo.id].length > 0 && (
@@ -1540,12 +1586,7 @@ const Dashboard = ({ user }) => {
                     {wo.shippedAt && (
                       <p className="date shipped">🚚 Shipped: {new Date(wo.shippedAt).toLocaleDateString()}</p>
                     )}
-                    {wo.pickedUpAt && (
-                      <p className="date picked-up">
-                        ✅ Picked Up: {new Date(wo.pickedUpAt).toLocaleDateString()}
-                        {getPickedUpBy(wo) && <> — by {getPickedUpBy(wo)}</>}
-                      </p>
-                    )}
+                    {renderPickupLines(wo)}
                     
                     {/* MTR Documents */}
                     {workOrderMTRs[wo.id] && workOrderMTRs[wo.id].length > 0 && (

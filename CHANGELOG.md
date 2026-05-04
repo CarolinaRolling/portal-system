@@ -5,6 +5,48 @@ Versioning follows [Semantic Versioning](https://semver.org/): MAJOR.MINOR.PATCH
 
 ---
 
+## [2.2.0] — 2026-05-04
+
+### Added
+- **Multi-pickup display for partial shipments.** Work orders with multiple
+  pickup events (different people picking up parts on different dates) now
+  render one line per pickup, e.g.:
+  ```
+  ✅ Picked Up: 4/28/2026 — by matthew
+  ✅ Picked Up: 5/1/2026 — by sarah
+  ```
+  Single-pickup orders look identical to before — same one-liner display.
+- Lines are read from the work order's `pickupHistory` array (the same source
+  cradmin reads from). If `pickupHistory` is missing or empty, the renderer
+  falls back to the top-level `pickedUpAt` / `pickedUpBy` fields so older
+  work orders without history still display correctly.
+
+### Internal
+- Added `renderPickupLines(wo)` helper that returns the pickup-line JSX. Used
+  in all three work-order card sections (Active, Recently Shipped, Order
+  History) so the rendering logic lives in one place.
+- Added `getEntryPickupDate(entry)` and `getEntryPickupName(entry)` helpers
+  that extract date and name from a single `pickupHistory` entry, trying the
+  most likely field-name candidates. The existing debug log was expanded to
+  dump the full `pickupHistory` array so we can confirm canonical field names
+  for the entry-level lockdown in v2.2.1.
+
+### Files touched
+- `frontend/src/pages/Dashboard.js` (only)
+- `package.json`, `backend/package.json`, `frontend/package.json` (version bump)
+- `CHANGELOG.md`
+
+### Follow-ups (carried forward)
+- Confirm canonical name + date field names inside `pickupHistory` entries
+  from the v2.2.0 console logs, then in v2.2.1 lock `getEntryPickupName()` /
+  `getEntryPickupDate()` to those exact fields and remove the debug logs.
+- Consider adding per-pickup quantity info (e.g., "matthew — 10 parts")
+  if pickupHistory entries include a quantity field. Skipped for now until
+  we see whether the data is there.
+- Stale duplicate files cleanup (still pending from v2.1.0).
+
+---
+
 ## [2.1.1] — 2026-05-04
 
 ### Fixed
