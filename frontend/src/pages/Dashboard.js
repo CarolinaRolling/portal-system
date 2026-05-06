@@ -146,26 +146,6 @@ const Dashboard = ({ user }) => {
         shippedAt: wo.shippedAt, 
         pickedUpAt: wo.pickedUpAt 
       })));
-
-      // DEBUG: Log all keys on a picked-up work order so we can identify the
-      // exact "picked up by" field name from Carolina. Also dumps the full
-      // pickupHistory array (Carolina stores the real per-pickup details there,
-      // including for partial shipments).
-      // Remove these logs once renderPickupLines() is locked to canonical fields.
-      const samplePickedUp = workOrdersToProcess.find(wo => wo.pickedUpAt);
-      if (samplePickedUp) {
-        console.log('🔍 PICKED-UP WO ALL KEYS:', Object.keys(samplePickedUp).sort());
-        console.log('🔍 PICKED-UP WO pickedUpBy (top-level):', samplePickedUp.pickedUpBy);
-        if (Array.isArray(samplePickedUp.pickupHistory) && samplePickedUp.pickupHistory.length > 0) {
-          console.log('🔍 pickupHistory entry count:', samplePickedUp.pickupHistory.length);
-          console.log('🔍 pickupHistory FULL ARRAY:', samplePickedUp.pickupHistory);
-          samplePickedUp.pickupHistory.forEach((entry, i) => {
-            console.log(`🔍 pickupHistory[${i}] KEYS:`, Object.keys(entry || {}).sort());
-          });
-        } else {
-          console.log('🔍 pickupHistory is empty or missing');
-        }
-      }
       
       // DEBUG: Check for duplicates in recently shipped
       const recentIds = recent.map(wo => wo.id);
@@ -459,64 +439,37 @@ const Dashboard = ({ user }) => {
   };
 
   // True if the value is a real name (not null, empty, or a placeholder like "unknown").
-  // Carolina's API returns the literal string "unknown" as a default when no name was
-  // captured at pickup, so we have to filter it out explicitly.
+  // Carolina's API may return the literal string "unknown" as a default when no name
+  // was captured, so we filter it out explicitly.
   const isMeaningfulName = (v) => {
     if (!v || typeof v !== 'string') return false;
     const t = v.trim().toLowerCase();
     return t.length > 0 && t !== 'unknown' && t !== 'n/a' && t !== 'none' && t !== 'null';
   };
 
-  // Resolve "picked up by" — prefer the pickupHistory array (which cradmin reads from),
-  // fall back to the top-level pickedUpBy field. The exact field name inside a
-  // pickupHistory entry isn't confirmed yet; we try the most likely names and the
-  // debug log in fetchOrders() shows the actual structure for verification.
-  const getPickedUpBy = (wo) => {
-    if (Array.isArray(wo.pickupHistory) && wo.pickupHistory.length > 0) {
-      // Most recent pickup is likely the last entry; fall back to first if needed.
-      const candidates = [
-        wo.pickupHistory[wo.pickupHistory.length - 1],
-        wo.pickupHistory[0]
-      ];
-      for (const entry of candidates) {
-        if (!entry || typeof entry !== 'object') continue;
-        const name =
-          entry.pickedUpBy || entry.name || entry.pickedBy ||
-          entry.personName || entry.recipientName ||
-          entry.signedBy || entry.signedByName ||
-          entry.driverName || entry.carrierName ||
-          (entry.signature && (entry.signature.name || entry.signature.signedBy)) ||
-          null;
-        if (isMeaningfulName(name)) return name;
-      }
-    }
-    if (isMeaningfulName(wo.pickedUpBy)) return wo.pickedUpBy;
-    return null;
+  // Carolina's pickupHistory entry schema (confirmed):
+  //   { date: ISO string, type: 'full' | 'partial', items: [...], pickedUpBy: string }
+  const getEntryPickupDate = (entry) => entry?.date || null;
+  const getEntryPickupName = (entry) =>
+    isMeaningfulName(entry?.pickedUpBy) ? entry.pickedUpBy : null;
+  const getEntryPickupType = (entry) => {
+    const t = entry?.type;
+    if (typeof t !== 'string' || !t.trim()) return null;
+    // Display as "Full" or "Partial" rather than the lowercase API value.
+    return t.charAt(0).toUpperCase() + t.slice(1).toLowerCase();
   };
 
-  // Pull a date out of one pickupHistory entry. Tries common field names because
-  // we haven't yet confirmed Carolina's canonical schema for these entries.
-  const getEntryPickupDate = (entry) =>
-    entry?.pickedUpAt || entry?.date || entry?.timestamp ||
-    entry?.pickedAt || entry?.createdAt || null;
-
-  // Pull a name out of one pickupHistory entry, filtered by isMeaningfulName.
-  const getEntryPickupName = (entry) => {
-    if (!entry || typeof entry !== 'object') return null;
-    const raw =
-      entry.pickedUpBy || entry.name || entry.pickedBy ||
-      entry.personName || entry.recipientName ||
-      entry.signedBy || entry.signedByName ||
-      entry.driverName || entry.carrierName ||
-      (entry.signature && (entry.signature.name || entry.signature.signedBy)) ||
-      null;
-    return isMeaningfulName(raw) ? raw : null;
-  };
+  // Resolver for the legacy single-line fallback path (no pickupHistory).
+  // The top-level pickedUpBy on the work order is often the literal "unknown",
+  // so isMeaningfulName filters that out.
+  const getPickedUpBy = (wo) =>
+    isMeaningfulName(wo.pickedUpBy) ? wo.pickedUpBy : null;
 
   // Render pickup line(s) for a work order.
-  // - If pickupHistory has usable entries → render one line per entry.
-  // - Otherwise fall back to the single top-level pickedUpAt/pickedUpBy line.
-  // For single-pickup orders this looks identical to the previous behavior.
+  // - If pickupHistory has usable entries → render one line per entry, with type.
+  // - Otherwise fall back to a single top-level pickedUpAt line.
+  // For single-pickup orders the visible result is identical to v2.2.0 plus the
+  // (Full)/(Partial) tag.
   const renderPickupLines = (wo) => {
     const entries = Array.isArray(wo.pickupHistory) ? wo.pickupHistory : [];
     if (entries.length > 0) {
@@ -524,10 +477,11 @@ const Dashboard = ({ user }) => {
         .map((entry, i) => {
           const date = getEntryPickupDate(entry);
           const name = getEntryPickupName(entry);
-          if (!date && !name) return null; // skip empty/unusable entries
+          const type = getEntryPickupType(entry);
+          if (!date && !name && !type) return null; // skip empty/unusable entries
           return (
             <p key={i} className="date picked-up">
-              ✅ Picked Up: {date ? new Date(date).toLocaleDateString() : '—'}
+              ✅ Picked Up{type && ` (${type})`}: {date ? new Date(date).toLocaleDateString() : '—'}
               {name && <> — by {name}</>}
             </p>
           );

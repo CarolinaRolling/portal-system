@@ -5,6 +5,63 @@ Versioning follows [Semantic Versioning](https://semver.org/): MAJOR.MINOR.PATCH
 
 ---
 
+## [2.3.0] — 2026-05-06
+
+### Added
+- **Pickup type indicator (Full / Partial)** displayed inline on every pickup
+  line. New format:
+  ```
+  ✅ Picked Up (Full): 5/6/2026 — by Joao Dauz Trucking
+  ✅ Picked Up (Partial): 4/28/2026 — by matthew
+  ```
+  Pulled from the `type` field on each `pickupHistory` entry. If the type
+  field is missing or empty, the line falls back to the previous format
+  (no parentheses) so older orders still render cleanly.
+
+### Changed
+- **Canonical schema lockdown** for `pickupHistory` entries. Now confirmed:
+  ```
+  { date, type ('full'|'partial'), items, pickedUpBy }
+  ```
+  All speculative fallback field-name lists removed from the entry helpers.
+  `getEntryPickupDate()` reads `entry.date`, `getEntryPickupName()` reads
+  `entry.pickedUpBy`. Code is meaningfully shorter and easier to follow.
+- `getPickedUpBy(wo)` simplified — only used now for the legacy fallback
+  path (work orders with `pickedUpAt` set but no `pickupHistory`). Reads
+  `wo.pickedUpBy` filtered through `isMeaningfulName()`.
+
+### Removed
+- All `🔍 PICKED-UP WO …` and `🔍 pickupHistory …` debug `console.log`
+  statements in `fetchOrders()`. Schema is locked down — debug output is
+  no longer needed and was cluttering the browser console.
+
+### Internal
+- New helper `getEntryPickupType(entry)` — capitalizes the API value
+  (`'full'` → `'Full'`, `'partial'` → `'Partial'`) for display, returns
+  `null` for missing/empty values.
+
+### Files touched
+- `frontend/src/pages/Dashboard.js` (only)
+- `package.json`, `backend/package.json`, `frontend/package.json` (version bump)
+- `CHANGELOG.md`
+
+### Follow-ups
+- Each `pickupHistory` entry has an `items` array (length 1 in the sample
+  we inspected). Could be used to display per-pickup quantity, e.g.
+  `(Partial — 10 of 20 parts)`. Not implemented yet because we haven't
+  inspected the `items` element shape — left for a future release if
+  desired.
+- The work order also has an `opTransports` array (was empty in samples
+  we've seen). Likely tracks Carolina-delivered shipments as opposed to
+  customer pickups. If you want delivered shipments folded into the same
+  timeline, we can add that in a future release.
+- Stale duplicate files cleanup (still pending from v2.1.0):
+  `frontend/App.js`, `frontend/Login.js`, `frontend/vendorApi.js`,
+  `backend/vendorRoutes.js`, `backend/vendorRoutes-additions.js`,
+  `frontend/src/pages/VendorPODetail.js`.
+
+---
+
 ## [2.2.0] — 2026-05-04
 
 ### Added
