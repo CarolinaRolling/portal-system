@@ -5,6 +5,56 @@ Versioning follows [Semantic Versioning](https://semver.org/): MAJOR.MINOR.PATCH
 
 ---
 
+## [2.3.1] — 2026-05-08
+
+### Fixed
+- **Material Test Reports were appearing in the Certificates of Conformance
+  section.** Root cause: the previous COC filter used exclusion logic
+  ("everything that isn't a shipping doc lands in COC"), which was a
+  defensive choice from v2.1.0 made before the canonical COC documentType
+  string was confirmed. Once MTRs were added to the portal-visible wishlist
+  on the Carolina API side, they started flowing through the
+  `/portal/:drNumber/documents` endpoint, and the exclusion-based filter
+  caught them as "not shipping → must be COC".
+
+  Fix: the COC filter is now a strict allowlist matching `documentType ===
+  'coc'`. MTRs that come through the portal-docs feed are silently filtered
+  out of both COC and Shipping sections — they continue to render correctly
+  in the dedicated MTR section above (which is sourced from the separate
+  `/api/workorders/:id` endpoint and was never affected by this bug).
+
+### Changed
+- `isShippingDoc` simplified to a strict equality check on `'shipping_doc'`.
+  Previous belt-and-suspenders aliases (`'shipping'`, `'bol'`) were dropped
+  now that the canonical Carolina documentType strings are confirmed:
+  `coc`, `mtr`, `shipping_doc`. Any unknown documentType coming through the
+  portal-docs feed is intentionally hidden — anything new that should be
+  visible to clients can get its own labeled section in a future release.
+
+### Internal
+- New helper `docTypeOf(doc)` centralizes the `documentType || type` lookup
+  and lowercase normalization. Used by `isShippingDoc` and `isCocDoc`.
+- New helper `isCocDoc(doc)` mirrors `isShippingDoc(doc)` for symmetry.
+
+### Files touched
+- `frontend/src/pages/Dashboard.js` (only)
+- `package.json`, `backend/package.json`, `frontend/package.json` (version bump)
+- `CHANGELOG.md`
+
+### Notes
+- This client-side fix is independent of the Carolina API wishlist work
+  in progress. Once the wishlist is fully restricting which documentTypes
+  flow through `/portal/:drNumber/documents`, the leak this fix addresses
+  will also be closed at the source — but the strict-allowlist filtering
+  here remains valuable as defense-in-depth.
+
+### Follow-ups (carried forward)
+- `pickupHistory[i].items` quantity display (from v2.3.0).
+- `opTransports` integration if Carolina populates it (from v2.3.0).
+- Stale duplicate files cleanup (still pending from v2.1.0).
+
+---
+
 ## [2.3.0] — 2026-05-06
 
 ### Added

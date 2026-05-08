@@ -356,17 +356,22 @@ const Dashboard = ({ user }) => {
     }));
   };
 
-  // Split portal docs into shipping docs vs everything else (COC + other).
-  // Carolina API tags shipping documents with documentType === 'shipping_doc'.
-  // Anything else from the portal endpoint (COCs, etc.) goes in the "COC" bucket.
-  const isShippingDoc = (doc) => {
-    const t = (doc.documentType || doc.type || '').toLowerCase();
-    return t === 'shipping_doc' || t === 'shipping' || t === 'bol';
-  };
+  // Carolina's canonical documentType values:
+  //   'coc'          — Certificate of Conformance
+  //   'mtr'          — Material Test Report (rendered in dedicated MTR section above,
+  //                    sourced from a different endpoint; filtered out here so it
+  //                    doesn't appear twice if the portal-docs feed also returns it)
+  //   'shipping_doc' — Pickup receipt / outbound shipment PDF
+  // Both filters are strict allowlists. Any unknown documentType coming through
+  // the portal-docs feed is intentionally hidden — anything we want shown should
+  // get its own labeled section.
+  const docTypeOf = (doc) => (doc?.documentType || doc?.type || '').toLowerCase();
+  const isShippingDoc = (doc) => docTypeOf(doc) === 'shipping_doc';
+  const isCocDoc = (doc) => docTypeOf(doc) === 'coc';
   const getShippingDocs = (drNumber) =>
     (workOrderPortalDocs[drNumber] || []).filter(isShippingDoc);
   const getCocDocs = (drNumber) =>
-    (workOrderPortalDocs[drNumber] || []).filter(d => !isShippingDoc(d));
+    (workOrderPortalDocs[drNumber] || []).filter(isCocDoc);
 
   // Render a portal-doc section (COC or Shipping). Returns null when empty so
   // the section disappears entirely if there are no docs of that type.

@@ -1,6 +1,6 @@
 {
   "name": "carolina-order-portal",
-  "version": "2.3.0",
+  "version": "2.3.1",
   "description": "Authenticated order portal with Carolina database integration",
   "main": "backend/server.js",
   "scripts": {
