@@ -5,6 +5,55 @@ Versioning follows [Semantic Versioning](https://semver.org/): MAJOR.MINOR.PATCH
 
 ---
 
+## [2.4.0] — 2026-05-10
+
+### Added
+- **Certification of Origin section** on every work-order card. Documents
+  tagged `documentType === 'usma'` from the Carolina portal-docs endpoint
+  now appear in a dedicated, collapsible "🌍 Certification of Origin"
+  section with the same View / Download buttons as the other doc sections.
+- Section ordering on every work-order card (Active, Recently Shipped,
+  Order History) is now:
+  1. 📄 Material Test Reports
+  2. 📜 Certificates of Conformance (COC)
+  3. 🚚 Shipping Documents
+  4. 🌍 Certification of Origin
+  
+  Each section is independently collapsible and only renders when there
+  are documents of that type.
+
+### Changed
+- Updated the canonical documentType reference comment in Dashboard.js to
+  include `'usma'`. Full set is now: `coc`, `mtr`, `shipping_doc`, `usma`.
+
+### Internal
+- Added `expandedOriginDocs` state + `toggleOriginDocs()` handler so the
+  Certification of Origin section has its own independent show/hide toggle.
+- Added `isOriginDoc(doc)` and `getOriginDocs(drNumber)` filter helpers,
+  mirroring the existing COC and Shipping helpers.
+- No new render code — the existing `renderPortalDocSection()` helper
+  introduced in v2.1.0 already handles this category without changes.
+
+### Backend
+- No changes. Same as past doc-type additions, the `/api/portal/workorders
+  /:drNumber/documents` endpoint already returns documents of all types;
+  splitting happens client-side.
+
+### Files touched
+- `frontend/src/pages/Dashboard.js` (only)
+- `package.json`, `backend/package.json`, `frontend/package.json` (version bump)
+- `CHANGELOG.md`
+
+### Follow-ups (carried forward)
+- `pickupHistory[i].items` quantity display (from v2.3.0).
+- `opTransports` integration if Carolina populates it (from v2.3.0).
+- Optional defense-in-depth: add a backend-side allowlist filter on the
+  portal-docs endpoint to mirror the client-side strict-allowlist filtering
+  (from v2.3.1).
+- Stale duplicate files cleanup (still pending from v2.1.0).
+
+---
+
 ## [2.3.1] — 2026-05-08
 
 ### Fixed

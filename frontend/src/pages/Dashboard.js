@@ -17,6 +17,7 @@ const Dashboard = ({ user }) => {
   const [workOrderPortalDocs, setWorkOrderPortalDocs] = useState({}); // Store portal documents by DR number (all types)
   const [expandedPortalDocs, setExpandedPortalDocs] = useState({}); // Track which work orders have COC/portal docs expanded
   const [expandedShippingDocs, setExpandedShippingDocs] = useState({}); // Track which work orders have shipping docs expanded
+  const [expandedOriginDocs, setExpandedOriginDocs] = useState({}); // Track which work orders have Certification of Origin docs expanded
   const [estimatePDFs, setEstimatePDFs] = useState({}); // Store PDF files by estimate ID
   const [estimatePortalFiles, setEstimatePortalFiles] = useState({}); // Store portal files by estimate number
   const [expandedEstimateFiles, setExpandedEstimateFiles] = useState({}); // Track which estimates have files expanded
@@ -356,22 +357,33 @@ const Dashboard = ({ user }) => {
     }));
   };
 
+  const toggleOriginDocs = (drNumber) => {
+    setExpandedOriginDocs(prev => ({
+      ...prev,
+      [drNumber]: !prev[drNumber]
+    }));
+  };
+
   // Carolina's canonical documentType values:
   //   'coc'          — Certificate of Conformance
   //   'mtr'          — Material Test Report (rendered in dedicated MTR section above,
   //                    sourced from a different endpoint; filtered out here so it
   //                    doesn't appear twice if the portal-docs feed also returns it)
   //   'shipping_doc' — Pickup receipt / outbound shipment PDF
-  // Both filters are strict allowlists. Any unknown documentType coming through
+  //   'usma'         — Certification of Origin
+  // All filters are strict allowlists. Any unknown documentType coming through
   // the portal-docs feed is intentionally hidden — anything we want shown should
   // get its own labeled section.
   const docTypeOf = (doc) => (doc?.documentType || doc?.type || '').toLowerCase();
   const isShippingDoc = (doc) => docTypeOf(doc) === 'shipping_doc';
   const isCocDoc = (doc) => docTypeOf(doc) === 'coc';
+  const isOriginDoc = (doc) => docTypeOf(doc) === 'usma';
   const getShippingDocs = (drNumber) =>
     (workOrderPortalDocs[drNumber] || []).filter(isShippingDoc);
   const getCocDocs = (drNumber) =>
     (workOrderPortalDocs[drNumber] || []).filter(isCocDoc);
+  const getOriginDocs = (drNumber) =>
+    (workOrderPortalDocs[drNumber] || []).filter(isOriginDoc);
 
   // Render a portal-doc section (COC or Shipping). Returns null when empty so
   // the section disappears entirely if there are no docs of that type.
@@ -1300,6 +1312,13 @@ const Dashboard = ({ user }) => {
                     isExpanded: !!expandedShippingDocs[wo.drNumber],
                     onToggle: () => toggleShippingDocs(wo.drNumber)
                   })}
+                  {renderPortalDocSection({
+                    drNumber: wo.drNumber,
+                    docs: getOriginDocs(wo.drNumber),
+                    title: '🌍 Certification of Origin',
+                    isExpanded: !!expandedOriginDocs[wo.drNumber],
+                    onToggle: () => toggleOriginDocs(wo.drNumber)
+                  })}
                 </div>
               </div>
             ))}
@@ -1447,6 +1466,13 @@ const Dashboard = ({ user }) => {
                       title: '🚚 Shipping Documents',
                       isExpanded: !!expandedShippingDocs[wo.drNumber],
                       onToggle: () => toggleShippingDocs(wo.drNumber)
+                    })}
+                    {renderPortalDocSection({
+                      drNumber: wo.drNumber,
+                      docs: getOriginDocs(wo.drNumber),
+                      title: '🌍 Certification of Origin',
+                      isExpanded: !!expandedOriginDocs[wo.drNumber],
+                      onToggle: () => toggleOriginDocs(wo.drNumber)
                     })}
                   </div>
                 </div>
@@ -1627,6 +1653,13 @@ const Dashboard = ({ user }) => {
                       title: '🚚 Shipping Documents',
                       isExpanded: !!expandedShippingDocs[wo.drNumber],
                       onToggle: () => toggleShippingDocs(wo.drNumber)
+                    })}
+                    {renderPortalDocSection({
+                      drNumber: wo.drNumber,
+                      docs: getOriginDocs(wo.drNumber),
+                      title: '🌍 Certification of Origin',
+                      isExpanded: !!expandedOriginDocs[wo.drNumber],
+                      onToggle: () => toggleOriginDocs(wo.drNumber)
                     })}
                   </div>
                 </div>

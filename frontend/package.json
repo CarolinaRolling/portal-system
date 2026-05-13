@@ -1,6 +1,6 @@
 {
   "name": "carolina-portal-frontend",
-  "version": "2.3.1",
+  "version": "2.4.0",
   "description": "Frontend UI for Carolina order portal",
   "private": true,
   "dependencies": {
