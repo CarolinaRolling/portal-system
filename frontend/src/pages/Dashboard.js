@@ -370,14 +370,14 @@ const Dashboard = ({ user }) => {
   //                    sourced from a different endpoint; filtered out here so it
   //                    doesn't appear twice if the portal-docs feed also returns it)
   //   'shipping_doc' — Pickup receipt / outbound shipment PDF
-  //   'usma'         — Certification of Origin
+  //   'usmca'        — Certification of Origin (USMCA)
   // All filters are strict allowlists. Any unknown documentType coming through
   // the portal-docs feed is intentionally hidden — anything we want shown should
   // get its own labeled section.
   const docTypeOf = (doc) => (doc?.documentType || doc?.type || '').toLowerCase();
   const isShippingDoc = (doc) => docTypeOf(doc) === 'shipping_doc';
   const isCocDoc = (doc) => docTypeOf(doc) === 'coc';
-  const isOriginDoc = (doc) => docTypeOf(doc) === 'usma';
+  const isOriginDoc = (doc) => docTypeOf(doc) === 'usmca';
   const getShippingDocs = (drNumber) =>
     (workOrderPortalDocs[drNumber] || []).filter(isShippingDoc);
   const getCocDocs = (drNumber) =>

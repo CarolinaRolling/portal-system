@@ -5,6 +5,26 @@ Versioning follows [Semantic Versioning](https://semver.org/): MAJOR.MINOR.PATCH
 
 ---
 
+## [2.4.1] — 2026-05-13
+
+### Fixed
+- **Certification of Origin section was empty** because the v2.4.0 filter
+  was locked to `documentType === 'usma'`, but Carolina's actual canonical
+  string is `'usmca'` (USMCA — United States-Mexico-Canada Agreement
+  certificate of origin). One-character bug. `isOriginDoc()` now matches
+  the correct string and USMCA documents flow into the section as expected.
+
+### Changed
+- Updated the canonical documentType reference comment in Dashboard.js.
+  Full set is now: `coc`, `mtr`, `shipping_doc`, `usmca`.
+
+### Files touched
+- `frontend/src/pages/Dashboard.js` (only)
+- `package.json`, `backend/package.json`, `frontend/package.json` (version bump)
+- `CHANGELOG.md`
+
+---
+
 ## [2.4.0] — 2026-05-10
 
 ### Added

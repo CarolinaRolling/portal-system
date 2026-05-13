@@ -1,6 +1,6 @@
 {
   "name": "carolina-portal-backend",
-  "version": "2.4.0",
+  "version": "2.4.1",
   "description": "Backend API for Carolina order portal",
   "main": "server.js",
   "scripts": {
