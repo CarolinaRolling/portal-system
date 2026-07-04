@@ -5,6 +5,54 @@ Versioning follows [Semantic Versioning](https://semver.org/): MAJOR.MINOR.PATCH
 
 ---
 
+## [2.5.0] — 2026-05-15
+
+### Added
+- **Inspection Reports section** on every work-order card. Documents tagged
+  `documentType === 'inspection_report'` from the Carolina portal-docs
+  endpoint now appear in a dedicated, collapsible "🔎 Inspection Reports"
+  section with the same View / Download buttons as the other doc sections.
+- Section ordering on every work-order card (Active, Recently Shipped,
+  Order History) is now:
+  1. 📄 Material Test Reports
+  2. 📜 Certificates of Conformance (COC)
+  3. 🔎 Inspection Reports
+  4. 🚚 Shipping Documents
+  5. 🌍 Certification of Origin
+  
+  Each section is independently collapsible and only renders when there
+  are documents of that type.
+
+### Changed
+- Updated the canonical documentType reference comment in Dashboard.js to
+  include `'inspection_report'`. Full set is now: `coc`, `mtr`,
+  `inspection_report`, `shipping_doc`, `usmca`.
+
+### Internal
+- Added `expandedInspectionDocs` state + `toggleInspectionDocs()` handler
+  so the Inspection Reports section has its own independent show/hide toggle.
+- Added `isInspectionDoc(doc)` and `getInspectionDocs(drNumber)` filter
+  helpers, mirroring the existing COC / Shipping / Origin helpers.
+- No new render code — the existing `renderPortalDocSection()` helper
+  handles this category without changes.
+
+### Backend
+- No changes.
+
+### Files touched
+- `frontend/src/pages/Dashboard.js` (only)
+- `package.json`, `backend/package.json`, `frontend/package.json` (version bump)
+- `CHANGELOG.md`
+
+### Follow-ups (carried forward)
+- `pickupHistory[i].items` quantity display (from v2.3.0).
+- `opTransports` integration if Carolina populates it (from v2.3.0).
+- Optional defense-in-depth: backend-side allowlist filter on the
+  portal-docs endpoint (from v2.3.1).
+- Stale duplicate files cleanup (still pending from v2.1.0).
+
+---
+
 ## [2.4.1] — 2026-05-13
 
 ### Fixed
